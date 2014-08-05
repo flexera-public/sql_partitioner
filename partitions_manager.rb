@@ -15,14 +15,12 @@ module SchemaTools
                               :data_length,
                               :index_length]
 
-      def initialize(adapter = DataMapper.repository.adapter,
-                     current_timestamp = Time.now.to_i * 1_000_000,
-                     table_name = 'events',
-                     logger = nil)
-        @adapter = adapter
-        @table_name = table_name
-        @current_timestamp = current_timestamp
-        @logger = logger || Merb.logger
+      def initialize(options = {})
+        @adapter           = options[:adapter] || DataMapper.repository.adapter
+        @current_timestamp = options[:current_timestamp] || Time.now.to_i * 1_000_000
+        @table_name        = options[:table_name] || 'events'
+        @logger            = options[:logger] || Merb.logger
+        @lock_wait_timeout = options[:lock_wait_timeout]
       end
 
       def log(message, prefix = true)
@@ -67,11 +65,27 @@ module SchemaTools
         [seperator, header, seperator, body, seperator].join("\n")
       end
 
+      def with_lock_wait_timeout(timeout, &block)
+        adapter.execute("SET lock_wait_timeout = #{timeout}")
+        begin
+          return block.call
+        ensure
+          adapter.execute("SET lock_wait_timeout = #{lock_wait_timeout_before}")
+        end
+      end
+
       # executes the sql and then displays the partition info
       # @param [String] sql to be executed
       # @return [Boolean] true
       def _execute_and_display_partition_info(sql)
-        adapter.execute(sql)
+        if @lock_wait_timeout
+          with_lock_wait_timeout(@lock_wait_timeout) do
+            adapter.execute(sql)
+          end
+        else
+          adapter.execute(sql)
+        end
+
         display_partition_info
       end
       private :_execute_and_display_partition_info
