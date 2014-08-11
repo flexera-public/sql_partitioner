@@ -66,11 +66,12 @@ module SchemaTools
       end
 
       def with_lock_wait_timeout(timeout, &block)
-        adapter.execute("SET lock_wait_timeout = #{timeout}")
+        lock_wait_timeout_before = adapter.select("SELECT @@local.lock_wait_timeout").first
+        adapter.execute("SET @@local.lock_wait_timeout = #{timeout}")
         begin
           return block.call
         ensure
-          adapter.execute("SET lock_wait_timeout = #{lock_wait_timeout_before}")
+          adapter.execute("SET @@local.lock_wait_timeout = #{lock_wait_timeout_before}")
         end
       end
 
