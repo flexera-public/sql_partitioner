@@ -16,7 +16,8 @@ module SqlPartitioner
 
     def initialize(options = {})
       @adapter           = options[:adapter] || DataMapper.repository.adapter
-      @current_timestamp = options[:current_timestamp] || Time.now.to_i * 1_000_000
+      @time_unit         = options[:time_unit] || :seconds
+      @current_timestamp = options[:current_timestamp] || to_time_unit(Time.now.to_i)
       @table_name        = options[:table_name] || 'events'
       @logger            = options[:logger] || Merb.logger
       @lock_wait_timeout = options[:lock_wait_timeout]
@@ -25,6 +26,36 @@ module SqlPartitioner
     def log(message, prefix = true)
       message = "[#{self.class.name}]#{message}" if prefix
       @logger.info "#{message}"
+    end
+
+    # converts from seconds to the configured time unit
+    #
+    # @param [Fixnum] timestamp timestamp in seconds
+    #
+    # @return [Fixnum] timestamp in configured time units
+    def to_time_unit(timestamp)
+      timestamp * time_unit_multiplier
+    end
+
+    # converts from the configured time unit to seconds
+    #
+    # @param [Fixnum] timestamp timestamp in the configured timeout units
+    #
+    # @return [Fixnum] timestamp in seconds
+    def from_time_unit(timestamp)
+      timestamp / time_unit_multiplier
+    end
+
+    # translates time_unit to a second multiplier to get the requested
+    # time unit
+    #
+    # @return [Fixnum] multiplier
+    def time_unit_multiplier
+      if @time_unit == :micro_seconds
+        multiplier = 1_000_000
+      else
+        multiplier = 1
+      end
     end
 
     # generates name of for "until_yyyy_mm_dd" from the given timestamp.
@@ -38,7 +69,8 @@ module SqlPartitioner
       if timestamp == FUTURE_PARTITION_VALUE
          FUTURE_PARTITION_NAME
       else
-        "until_#{Time.at(timestamp/1_000_000).strftime("%Y_%m_%d")}"
+        seconds = from_time_unit(timestamp)
+        "until_#{Time.at(seconds).strftime("%Y_%m_%d")}"
       end
     end
 
@@ -260,7 +292,7 @@ module SqlPartitioner
       latest_partition = fetch_latest_partition
       raise "Latest partition not found" unless latest_partition
       until_timestamp = latest_partition.partition_timestamp  +
-                       (60 * 60 * 24 * partition_size * 1_000_000)
+                       to_time_unit(60 * 60 * 24 * partition_size)
       _append_partition(until_timestamp, dry_run)
     end
 
@@ -317,7 +349,7 @@ module SqlPartitioner
     # @param [Boolean] dry run, default value is false. Query wont be executed
     #                  if dry_run is set to true
     def drop_partitions_older_than_in_days(days_from_now, dry_run = false)
-      timestamp = self.current_timestamp + (60 * 60 * 24 * days_from_now * 1_000_000)
+      timestamp = self.current_timestamp + to_time_unit(60 * 60 * 24 * days_from_now)
       drop_partitions_older_than(timestamp, dry_run)
     end
 
@@ -342,7 +374,7 @@ module SqlPartitioner
       _validate_initialize_partitioning_in_days_params(days)
       partition_data = {}
       days.sort.each do |days_form_now|
-        until_timestamp =  self.current_timestamp + (60 * 60 * 24 * days_form_now * 1_000_000)
+        until_timestamp =  self.current_timestamp + to_time_unit(60 * 60 * 24 * days_form_now)
         partition_name = self.class.name_from_timestamp(until_timestamp)
         partition_data[partition_name] = until_timestamp
       end
@@ -469,7 +501,7 @@ module SqlPartitioner
         _raise_arg_err "window_size should an Integer greater than 0"
       end
       partition_data = {}
-      offset = window_size * 24 * 60 * 60 * 1_000_000
+      offset = to_time_unit(window_size * 24 * 60 * 60)
       until_timestamp = base_timestamp || (self.current_timestamp - offset)
       while(until_timestamp <= end_timestamp) do
         until_timestamp += offset
@@ -493,8 +525,8 @@ module SqlPartitioner
       end_date = policy[:active_partition_end_date]
       window_size = policy[:partition_window_size_in_days]
 
-      start_timestamp = start_date.to_i * 1_000_000
-      end_timestamp = end_date.to_i * 1_000_000
+      start_timestamp = to_time_unit(start_date.to_i)
+      end_timestamp = to_time_unit(end_date.to_i)
 
       partition_info = fetch_partition_info_from_db
 
