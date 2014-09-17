@@ -15,11 +15,11 @@ module SqlPartitioner
                             :index_length]
 
     def initialize(options = {})
-      @adapter           = options[:adapter] || DataMapper.repository.adapter
+      @adapter           = options[:adapter]
       @time_unit         = options[:time_unit] || :seconds
       @current_timestamp = options[:current_timestamp] || to_time_unit(Time.now.to_i)
-      @table_name        = options[:table_name] || 'events'
-      @logger            = options[:logger] || Merb.logger
+      @table_name        = options[:table_name]
+      @logger            = options[:logger]
       @lock_wait_timeout = options[:lock_wait_timeout]
     end
 
