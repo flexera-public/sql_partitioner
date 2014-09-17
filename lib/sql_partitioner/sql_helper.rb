@@ -1,37 +1,5 @@
 module SqlPartitioner
   class SQL
-    # def self.select(in_batches = false)
-    #   select_sql = "SELECT * FROM events WHERE timestamp < ?"
-    #   select_sql += " LIMIT ?" if in_batches
-    #   DataMapper::Ext::String.compress_lines(select_sql)
-    # end
-
-    # def self.select_by_offset(in_batches = false)
-    #   DataMapper::Ext::String.compress_lines(<<-SQL)
-    #     #{select(in_batches)}
-    #     OFFSET ?
-    #   SQL
-    # end
-
-    # def self.count
-    #   count_sql = "SELECT COUNT(*) FROM events WHERE timestamp < ?"
-    #   DataMapper::Ext::String.compress_lines(count_sql)
-    # end
-
-    # def self.delete(in_batches = false)
-    #   delete_sql = "DELETE FROM events WHERE timestamp < ?"
-    #   delete_sql += " LIMIT ?" if in_batches
-    #   DataMapper::Ext::String.compress_lines(delete_sql)
-    # end
-
-    # def self.insert(in_batches = false,
-    #                 target_table_name = 'deleted_events')
-    #   DataMapper::Ext::String.compress_lines(<<-SQL)
-    #   INSERT IGNORE INTO #{target_table_name}
-    #   #{select(in_batches)}
-    #   SQL
-    # end
-
     def self.partition_info
       DataMapper::Ext::String.compress_lines(<<-SQL)
         SELECT  *
