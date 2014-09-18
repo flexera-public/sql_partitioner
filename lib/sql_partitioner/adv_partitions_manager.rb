@@ -30,7 +30,7 @@ module SqlPartitioner
         _raise_arg_err "window_size should an Integer greater than 0"
       end
       partition_data = {}
-      offset = to_time_unit(window_size * 24 * 60 * 60)
+      offset = @tum.days_to_time_unit(window_size)
       until_timestamp = base_timestamp || (self.current_timestamp - offset)
       while(until_timestamp <= end_timestamp) do
         until_timestamp += offset
@@ -54,8 +54,8 @@ module SqlPartitioner
       end_date = policy[:active_partition_end_date]
       window_size = policy[:partition_window_size_in_days]
 
-      start_timestamp = to_time_unit(start_date.to_i)
-      end_timestamp = to_time_unit(end_date.to_i)
+      start_timestamp = @tum.to_time_unit(start_date.to_i)
+      end_timestamp = @tum.to_time_unit(end_date.to_i)
 
       partition_info = fetch_partition_info_from_db
 
@@ -107,8 +107,8 @@ module SqlPartitioner
     def manage_partitions(partition_size, drop_older_than, add_partitions_including, dry_run = false)
       time_now = Time.now.utc
       policy = {
-        :active_partition_start_date   => time_now - drop_older_than * 24 * 60 * 60,
-        :active_partition_end_date     => time_now + add_partitions_including * 24 * 60 * 60,
+        :active_partition_start_date   => time_now - TimeUnitManager.days_in_seconds(drop_older_than),
+        :active_partition_end_date     => time_now + TimeUnitManager.days_in_seconds(add_partitions_including),
         :partition_window_size_in_days => window_size
       }
 
@@ -155,7 +155,7 @@ module SqlPartitioner
       _validate_initialize_partitioning_in_days_params(days)
       partition_data = {}
       days.sort.each do |days_form_now|
-        until_timestamp = self.current_timestamp + to_time_unit(60 * 60 * 24 * days_form_now)
+        until_timestamp = self.current_timestamp + @tum.days_to_time_unit(days_form_now)
         partition_name  = name_from_timestamp(until_timestamp)
         partition_data[partition_name] = until_timestamp
       end

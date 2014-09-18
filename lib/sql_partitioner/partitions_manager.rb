@@ -16,8 +16,9 @@ module SqlPartitioner
 
     def initialize(options = {})
       @adapter           = options[:adapter]
-      @time_unit         = options[:time_unit] || :seconds
-      @current_timestamp = options[:current_timestamp] || to_time_unit(Time.now.to_i)
+      @tum               = TimeUnitManager.new(options[:time_unit] || :seconds)
+
+      @current_timestamp = options[:current_timestamp] || @tum.to_time_unit(Time.now.to_i)
       @table_name        = options[:table_name]
       @logger            = options[:logger]
       @lock_wait_timeout = options[:lock_wait_timeout]
@@ -26,36 +27,6 @@ module SqlPartitioner
     def log(message, prefix = true)
       message = "[#{self.class.name}]#{message}" if prefix
       @logger.info "#{message}"
-    end
-
-    # converts from seconds to the configured time unit
-    #
-    # @param [Fixnum] timestamp timestamp in seconds
-    #
-    # @return [Fixnum] timestamp in configured time units
-    def to_time_unit(timestamp)
-      timestamp * time_unit_multiplier
-    end
-
-    # converts from the configured time unit to seconds
-    #
-    # @param [Fixnum] timestamp timestamp in the configured timeout units
-    #
-    # @return [Fixnum] timestamp in seconds
-    def from_time_unit(timestamp)
-      timestamp / time_unit_multiplier
-    end
-
-    # translates time_unit to a second multiplier to get the requested
-    # time unit
-    #
-    # @return [Fixnum] multiplier
-    def time_unit_multiplier
-      if @time_unit == :micro_seconds
-        multiplier = 1_000_000
-      else
-        multiplier = 1
-      end
     end
 
     # generates name of for "until_yyyy_mm_dd" from the given timestamp.
@@ -69,7 +40,7 @@ module SqlPartitioner
       if timestamp == FUTURE_PARTITION_VALUE
          FUTURE_PARTITION_NAME
       else
-        seconds = from_time_unit(timestamp)
+        seconds = @tum.from_time_unit(timestamp)
         "until_#{Time.at(seconds).strftime("%Y_%m_%d")}"
       end
     end
@@ -243,12 +214,16 @@ module SqlPartitioner
       if partition_size.nil? || partition_size <= 0
         _raise_arg_err "Partition size should be > 0"
       end
+
       latest_partition = fetch_latest_partition
       raise "Latest partition not found" unless latest_partition
-      until_timestamp = latest_partition.partition_timestamp  +
-                       to_time_unit(60 * 60 * 24 * partition_size)
+
+      until_timestamp = latest_partition.timestamp +
+                        @tum.days_to_time_unit(partition_size)
+
       _append_partition(until_timestamp, dry_run)
     end
+
 
     # Drop partitions by name
     # @param [Array] array of partition_names in String
@@ -273,7 +248,7 @@ module SqlPartitioner
     # @param [Boolean] dry run, default value is false. Query wont be executed
     #                  if dry_run is set to true
     def drop_partitions_older_than_in_days(days_from_now, dry_run = false)
-      timestamp = self.current_timestamp + to_time_unit(60 * 60 * 24 * days_from_now)
+      timestamp = self.current_timestamp + @tum.days_to_time_unit(days_from_now)
       drop_partitions_older_than(timestamp, dry_run)
     end
 
