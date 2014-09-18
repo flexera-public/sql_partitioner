@@ -213,7 +213,7 @@ module SqlPartitioner
 
       result.map do |partition|
         wrapper = OpenStruct.new(Hash[partition.each_pair.to_a])
-        if partition.partition_description ==  FUTURE_PARTITION_VALUE
+        if partition.partition_description == FUTURE_PARTITION_VALUE
           wrapper.partition_timestamp = FUTURE_PARTITION_VALUE
         else
           wrapper.partition_timestamp = partition.partition_description.to_i

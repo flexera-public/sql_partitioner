@@ -30,7 +30,7 @@ module SqlPartitioner
                               new_partition_data,
                               reorg_partition_name)
       return nil if new_partition_data.empty?
-      partition_suq_query = new_partition_data.map do |partition_name, until_timestamp|
+      partition_suq_query = sort_partition_data(new_partition_data).map do |partition_name, until_timestamp|
         "PARTITION #{partition_name} VALUES LESS THAN (#{until_timestamp})"
       end.join(',')
       SqlPartitioner::SQL.compress_lines(<<-SQL)
@@ -40,9 +40,22 @@ module SqlPartitioner
       SQL
     end
 
+    def self.sort_partition_data(partition_data)
+      puts partition_data.inspect
+      partition_data.to_a.sort do |x,y|
+        if x[1] == "MAXVALUE"
+          1
+        elsif y[1] == "MAXVALUE"
+          -1
+        else
+          x[1] <=> y[1]
+        end
+      end
+    end
+
 
     def self.initialize_partitioning(table_name, partition_data)
-      partition_sub_query = partition_data.map do |partition_name, until_timestamp|
+      partition_sub_query = sort_partition_data(partition_data).map do |partition_name, until_timestamp|
         "PARTITION #{partition_name} VALUES LESS THAN (#{until_timestamp})"
       end.join(',')
       SqlPartitioner::SQL.compress_lines(<<-SQL)
