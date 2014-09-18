@@ -212,7 +212,7 @@ module SqlPartitioner
       result = adapter.select(select_sql, adapter.schema_name, table_name)
 
       result.map do |partition|
-        wrapper = OpenStruct.new(partition)
+        wrapper = OpenStruct.new(Hash[partition.each_pair.to_a])
         if partition.partition_description ==  FUTURE_PARTITION_VALUE
           wrapper.partition_timestamp = FUTURE_PARTITION_VALUE
         else
@@ -290,7 +290,7 @@ module SqlPartitioner
     #                partition info is fetched from db
     # @return [Struct or NilClass] partition with maximum timestamp value
     def fetch_latest_partition(partition_info = nil)
-      non_future_partitions(partition_info).max{ |p| p.partition_timestamp }
+      non_future_partitions(partition_info).max_by{ |p| p.partition_timestamp }
     end
 
     #fetch the partition which is currently active. i.e  holds the records
@@ -298,12 +298,12 @@ module SqlPartitioner
     def fetch_current_partition(partition_info = nil)
       non_future_partitions(partition_info).select do |p|
         p.partition_timestamp > self.current_timestamp
-      end.min { |p| p.partition_timestamp }
+      end.min_by { |p| p.partition_timestamp }
     end
 
     #fetch the partition with oldest timestamp
     def fetch_oldest_partition(partition_info = nil)
-      non_future_partitions(partition_info).min { |p| p.partition_timestamp }
+      non_future_partitions(partition_info).min_by { |p| p.partition_timestamp }
     end
 
     def future_partition?(partition)
