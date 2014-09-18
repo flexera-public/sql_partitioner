@@ -92,7 +92,6 @@ module SqlPartitioner
     # @return [Hash] SQLs to reorg and drop partitions if dry run is true
     #
     # @raise [ArgumentError] if policy has invalid values
-
     def advance_partition_window(policy, dry_run = false)
       _validate_advance_partition_policy(policy)
       to_be_dropped, to_be_added = _prep_params_for_advance_partition(policy)
@@ -102,6 +101,21 @@ module SqlPartitioner
         {:drop_sql => drop_partition_result, :reorg_sql => reorg_result}
       else
         drop_partition_result && reorg_result
+      end
+    end
+
+    def manage_partitions(partition_size, drop_older_than, add_partitions_including, dry_run = false)
+      time_now = Time.now.utc
+      policy = {
+        :active_partition_start_date   => time_now - drop_older_than * 24 * 60 * 60,
+        :active_partition_end_date     => time_now + add_partitions_including * 24 * 60 * 60,
+        :partition_window_size_in_days => window_size
+      }
+
+      result = partition_manager.advance_partition_window(policy, dry_run)
+      if dry_run
+        puts "DROP_SQL :  #{result[:drop_sql]}"
+        puts "REORG_SQL : #{result[:reorg_sql]}"
       end
     end
 
