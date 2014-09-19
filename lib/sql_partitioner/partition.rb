@@ -19,16 +19,7 @@ module SqlPartitioner
       select_sql = SqlPartitioner::SQL.partition_info
       result = adapter.select(select_sql, adapter.schema_name, table_name)
 
-      result.map do |partition|
-        wrapper = OpenStruct.new(Hash[partition.each_pair.to_a])
-        if partition.partition_description == FUTURE_PARTITION_VALUE
-          wrapper.partition_timestamp = FUTURE_PARTITION_VALUE
-        else
-          wrapper.partition_timestamp = partition.partition_description.to_i
-        end
-        wrapper.ordinal_position = partition.partition_ordinal_position
-        wrapper
-      end
+      result.map{ |r| self.new(r) }
     end
 
     def ordinal_position
