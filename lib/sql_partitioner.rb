@@ -1,3 +1,5 @@
+require 'sql_partitioner/partition'
+require 'sql_partitioner/partitions_fetcher'
 require 'sql_partitioner/time_unit_manager'
 require 'sql_partitioner/sql_helper'
 require 'sql_partitioner/partitions_manager'

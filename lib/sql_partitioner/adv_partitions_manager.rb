@@ -59,7 +59,7 @@ module SqlPartitioner
 
       partition_info = fetch_partition_info_from_db
 
-      max_partition = fetch_latest_partition(partition_info)
+      max_partition = @partitions_fetcher.fetch_latest_partition(partition_info)
 
       to_be_dropped = partitions_older_than_timestamp(start_timestamp,
                                                       partition_info)
@@ -199,7 +199,7 @@ module SqlPartitioner
     # @return [Array] Array of partition name(String) that hold data older
     #                 than given timestamp
     def partitions_older_than_timestamp(timestamp, partition_info = nil)
-      non_future_partitions(partition_info).select do |p|
+      @partitions_fetcher.non_future_partitions(partition_info).select do |p|
         timestamp > p.partition_timestamp
       end.map(&:partition_name)
     end

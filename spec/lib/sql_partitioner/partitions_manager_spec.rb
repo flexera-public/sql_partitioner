@@ -53,14 +53,14 @@ describe "#EventPartitionManager" do
   describe "#non_future_partitions" do
     context "when there is future partition" do
       it "should filter future partition" do
-        actual = @partition_manager.non_future_partitions(@partition_info)
+        actual = @partition_manager.partitions_fetcher.non_future_partitions(@partition_info)
         expect(actual.count).to eq(@partition_info.count - 1)
         expect(actual.detect { |p| p.partition_name == 'future' }).to be nil
       end
     end
     context "when input is empty" do
       it "should return empty array" do
-        @partition_manager.non_future_partitions([]).should be_empty
+        @partition_manager.partitions_fetcher.non_future_partitions([]).should be_empty
       end
     end
   end
@@ -266,10 +266,10 @@ describe "#EventPartitionManager" do
         partition = OpenStruct.new
         partition.partition_name = 'future'
         partition.partition_timestamp = 'MAXVALUE'
-        @partition_manager.should_receive(:fetch_partition_info_from_db).and_return([partition])
+        @partition_manager.partitions_fetcher.should_receive(:fetch_partition_info_from_db).and_return([partition])
       end
       it "shoud return nil" do
-        @partition_manager.fetch_latest_partition.should be_nil
+        @partition_manager.partitions_fetcher.fetch_latest_partition.should be_nil
       end
     end
     context "when there is latest partition" do
@@ -281,7 +281,7 @@ describe "#EventPartitionManager" do
         end
         it "should return the latest partition" do
           expected_timestamp = @time_now + (3 * 24 * 60 * 60 * 1_000_000)
-          actual = @partition_manager.fetch_latest_partition(@partition_info)
+          actual = @partition_manager.partitions_fetcher.fetch_latest_partition(@partition_info)
           actual.should_not be_nil
           actual.partition_timestamp.should == expected_timestamp
         end
@@ -295,7 +295,7 @@ describe "#EventPartitionManager" do
 
         it "should return the latest partition" do
           expected_timestamp = @time_now + (-1 * 24 * 60 * 60 * 1_000_000)
-          actual = @partition_manager.fetch_latest_partition(@partition_info)
+          actual = @partition_manager.partitions_fetcher.fetch_latest_partition(@partition_info)
           actual.should_not be_nil
           actual.partition_timestamp.should == expected_timestamp
         end
@@ -311,7 +311,7 @@ describe "#EventPartitionManager" do
                                                                          @time_now)
       end
       it "should return nil" do
-        @partition_manager.fetch_current_partition(@partition_info).should be_nil
+        @partition_manager.partitions_fetcher.fetch_current_partition(@partition_info).should be_nil
       end
     end
     context "when there is current_partition" do
@@ -322,7 +322,7 @@ describe "#EventPartitionManager" do
       end
       it "should return the latest partition" do
         expected_timestamp = @time_now + (1 * 24 * 60 * 60 * 1_000_000)
-        actual = @partition_manager.fetch_current_partition(@partition_info)
+        actual = @partition_manager.partitions_fetcher.fetch_current_partition(@partition_info)
         actual.should_not be_nil
         actual.partition_timestamp.should == expected_timestamp
       end
