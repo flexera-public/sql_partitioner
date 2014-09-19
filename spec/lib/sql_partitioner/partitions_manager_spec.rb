@@ -266,7 +266,7 @@ describe "#EventPartitionManager" do
         partition = OpenStruct.new
         partition.partition_name = 'future'
         partition.partition_timestamp = 'MAXVALUE'
-        @partition_manager.partitions_fetcher.should_receive(:fetch_partition_info_from_db).and_return([partition])
+        SqlPartitioner::Partition.should_receive(:all).and_return([partition])
       end
       it "shoud return nil" do
         @partition_manager.partitions_fetcher.fetch_latest_partition.should be_nil

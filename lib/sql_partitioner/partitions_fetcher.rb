@@ -20,25 +20,6 @@ module SqlPartitioner
       @current_timestamp = current_timestamp
     end
 
-    # fetches the partition info from information schema
-    # @return [Array] Array of partition info Struct
-    def fetch_partition_info_from_db
-      select_sql = SqlPartitioner::SQL.partition_info
-      result = adapter.select(select_sql, adapter.schema_name, table_name)
-
-      result.map do |partition|
-        wrapper = OpenStruct.new(Hash[partition.each_pair.to_a])
-        if partition.partition_description == FUTURE_PARTITION_VALUE
-          wrapper.partition_timestamp = FUTURE_PARTITION_VALUE
-        else
-          wrapper.partition_timestamp = partition.partition_description.to_i
-        end
-        wrapper.ordinal_position = partition.partition_ordinal_position
-        wrapper
-      end
-    end
-
-
     # helper to format the partition_info into tabular form
     # @param [Array] array of partition info Structs
     # @return [String] formatted partitions in tabular form
@@ -74,14 +55,14 @@ module SqlPartitioner
     # logs the formatted partition info from information schema
     # @return [Boolean] true
     def display_partition_info
-      partition_info = fetch_partition_info_from_db
+      partition_info = Partition.all(adapter, table_name)
       log "\n#{self.class.format_partition_info(partition_info)}", false
       true
     end
 
     # get all partitions that does not have timestamp as 'FUTURE_PARTITION_VALUE'
     def non_future_partitions(partition_info = nil)
-      partition_info ||= fetch_partition_info_from_db
+      partition_info ||= Partition.all(adapter, table_name)
       partition_info.reject { |p| future_partition?(p) }
     end
 
