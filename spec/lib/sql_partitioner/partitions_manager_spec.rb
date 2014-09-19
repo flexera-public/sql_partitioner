@@ -7,14 +7,15 @@ class EventPartitionManagerSpec
     partition_data = []
     for i in range
       partition = OpenStruct.new
-      partition.partition_timestamp = time + (i * 24 * 60 * 60 * 1_000_000)
-      partition_data << partition
+      partition.partition_description = time + (i * 24 * 60 * 60 * 1_000_000)
+      partition_data << SqlPartitioner::Partition.new(partition)
     end
     future_partition = OpenStruct.new
-    future_partition.partition_timestamp = 'MAXVALUE'
-    partition_data << future_partition
+    future_partition.partition_description = 'MAXVALUE'
+    partition_data << SqlPartitioner::Partition.new(future_partition)
   end
 end
+
 describe "#EventPartitionManager" do
   before(:each) do
     @adapter = Object.new
@@ -34,17 +35,17 @@ describe "#EventPartitionManager" do
                            "until_2014_04_01"=>"1396373901193398",
                            "until_2014_04_16"=>"1397669901193684",
                            "future"=>"MAXVALUE"}
-    PartitionInfo = Struct.new(:partition_name, :partition_timestamp)
+    PartitionInfo = Struct.new(:partition_name, :partition_description)
     @partition_info = test_partition_data.map do |key, value|
       value  =  value == "MAXVALUE" ? "MAXVALUE" : value.to_i
-      PartitionInfo.new(key, value)
+      SqlPartitioner::Partition.new(PartitionInfo.new(key, value))
     end.sort do |x, y|
-        if x.partition_timestamp == "MAXVALUE"
+        if x.timestamp == "MAXVALUE"
           1
-        elsif y.partition_timestamp == "MAXVALUE"
+        elsif y.timestamp == "MAXVALUE"
           -1
         else
-          x.partition_timestamp <=> y.partition_timestamp
+          x.timestamp <=> y.timestamp
         end
       end
     @adapter.stub(:schema_name).and_return('test_schema')
@@ -55,7 +56,7 @@ describe "#EventPartitionManager" do
       it "should filter future partition" do
         actual = @partition_manager.partitions_fetcher.non_future_partitions(@partition_info)
         expect(actual.count).to eq(@partition_info.count - 1)
-        expect(actual.detect { |p| p.partition_name == 'future' }).to be nil
+        expect(actual.detect { |p| p.name == 'future' }).to be nil
       end
     end
     context "when input is empty" do
@@ -85,8 +86,8 @@ describe "#EventPartitionManager" do
                              " LESS THAN (MAXVALUE))"
         expected = {:drop_sql=>expected_drop_sql,
                     :reorg_sql=> expected_reorg_sql}
-        @partition_manager.should_receive(:fetch_current_partition).and_return(nil)
-        @partition_manager.should_receive(:fetch_partition_info_from_db).and_return(@partition_info)
+        @partition_manager.partitions_fetcher.should_receive(:fetch_current_partition).and_return(nil)
+        @partition_manager.partitions_fetcher.should_receive(:fetch_partition_info_from_db).and_return(@partition_info)
         actual = @partition_manager.advance_partition_window(@policy, true)
         actual.should == expected
       end
@@ -102,7 +103,7 @@ describe "#EventPartitionManager" do
     end
     context "start date and end date is already partitioned" do
       it "should return empty array" do
-        @partition_manager.should_receive(:fetch_partition_info_from_db).and_return(@partition_info)
+        @partition_manager.partitions_fetcher.should_receive(:fetch_partition_info_from_db).and_return(@partition_info)
         actual = @partition_manager.send(:_prep_params_for_advance_partition, @policy)
         actual.should == [[],{}]
       end
@@ -185,7 +186,7 @@ describe "#EventPartitionManager" do
         future_partition = OpenStruct.new
         future_partition.partition_name = 'future'
         future_partition.partition_timestamp ='MAXVALUE'
-        @partition_manager.should_receive(:fetch_partition_info_from_db).and_return([future_partition])
+        @partition_manager.partitions_fetcher.should_receive(:fetch_partition_info_from_db).and_return([future_partition])
         lambda {
           @partition_manager.send(:_prep_params_for_advance_partition, @policy)
         }.should raise_error(/Atleast one non future partition expected, but none found/)
@@ -283,7 +284,7 @@ describe "#EventPartitionManager" do
           expected_timestamp = @time_now + (3 * 24 * 60 * 60 * 1_000_000)
           actual = @partition_manager.partitions_fetcher.fetch_latest_partition(@partition_info)
           actual.should_not be_nil
-          actual.partition_timestamp.should == expected_timestamp
+          actual.timestamp.should == expected_timestamp
         end
       end
       context "and into past" do
@@ -297,7 +298,7 @@ describe "#EventPartitionManager" do
           expected_timestamp = @time_now + (-1 * 24 * 60 * 60 * 1_000_000)
           actual = @partition_manager.partitions_fetcher.fetch_latest_partition(@partition_info)
           actual.should_not be_nil
-          actual.partition_timestamp.should == expected_timestamp
+          actual.timestamp.should == expected_timestamp
         end
       end
     end
@@ -324,7 +325,7 @@ describe "#EventPartitionManager" do
         expected_timestamp = @time_now + (1 * 24 * 60 * 60 * 1_000_000)
         actual = @partition_manager.partitions_fetcher.fetch_current_partition(@partition_info)
         actual.should_not be_nil
-        actual.partition_timestamp.should == expected_timestamp
+        actual.timestamp.should == expected_timestamp
       end
     end
   end
@@ -374,7 +375,7 @@ describe "#EventPartitionManager" do
         @partition_manager.should_receive(:_validate_drop_partitions_params).and_return(true)
         @adapter.should_receive(:execute).with(@expected).and_return(true)
 
-        @partition_manager.should_receive(:display_partition_info).and_return(nil)
+        @partition_manager.partitions_fetcher.should_receive(:display_partition_info).and_return(nil)
         @partition_manager.drop_partitions(['hello', 'hello1'])
       end
       context "and query is nil" do
@@ -408,7 +409,7 @@ describe "#EventPartitionManager" do
       it "should execute query" do
         @time_now = Time.now.to_i * 1_000_000
         @adapter.should_receive(:execute).with(@expected).and_return(true)
-        @partition_manager.should_receive(:display_partition_info).and_return(nil)
+        @partition_manager.partitions_fetcher.should_receive(:display_partition_info).and_return(nil)
         @partition_manager.send(:_reorg_future_partition, @partition_data)
 
       end
@@ -438,7 +439,7 @@ describe "#EventPartitionManager" do
     context "when not dry run" do
       it "should execute query" do
         @adapter.should_receive(:execute).with(@expected).and_return(true)
-        @partition_manager.should_receive(:display_partition_info).and_return(nil)
+        @partition_manager.partitions_fetcher.should_receive(:display_partition_info).and_return(nil)
         @partition_manager.initialize_partitioning(@partition_data)
       end
     end
@@ -566,7 +567,7 @@ describe "#EventPartitionManager" do
     context "when params are valid" do
       it "should return true" do
         input = ["hello", "test124"]
-        @partition_manager.should_receive(:fetch_current_partition).and_return(nil)
+        @partition_manager.partitions_fetcher.should_receive(:fetch_current_partition).and_return(nil)
         expect(@partition_manager.send(:_validate_drop_partitions_params, input)).to be true
       end
     end
@@ -580,14 +581,14 @@ describe "#EventPartitionManager" do
         lambda {
           @partition_manager.send(:_validate_drop_partitions_params, input)
         }.should raise_error(ArgumentError, /Invalid value 1.*found/)
-        @partition_manager.should_receive(:fetch_current_partition).and_return(nil)
+        @partition_manager.partitions_fetcher.should_receive(:fetch_current_partition).and_return(nil)
         input = ["future", "hello"]
         lambda {
           @partition_manager.send(:_validate_drop_partitions_params, input)
         }.should raise_error(ArgumentError, /current and.*dropped/)
         current_partition = OpenStruct.new
         current_partition.partition_name = 'test123'
-        @partition_manager.should_receive(:fetch_current_partition).and_return(current_partition)
+        @partition_manager.partitions_fetcher.should_receive(:fetch_current_partition).and_return(current_partition)
         input = ["test123","hello"]
         lambda {
           @partition_manager.send(:_validate_drop_partitions_params, input)

@@ -53,7 +53,7 @@ module SqlPartitioner
         adapter.execute(sql)
       end
 
-      display_partition_info
+      @partitions_fetcher.display_partition_info
     end
     private :_execute_and_display_partition_info
 
@@ -87,7 +87,7 @@ module SqlPartitioner
         end
       end
       black_listed_partitions = [FUTURE_PARTITION_NAME]
-      if active_partition = fetch_current_partition
+      if active_partition = @partitions_fetcher.fetch_current_partition
         black_listed_partitions << active_partition.partition_name
       end
       if (partition_names & black_listed_partitions).any?

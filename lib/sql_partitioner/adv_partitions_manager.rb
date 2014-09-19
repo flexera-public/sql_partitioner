@@ -57,16 +57,15 @@ module SqlPartitioner
       start_timestamp = @tum.to_time_unit(start_date.to_i)
       end_timestamp = @tum.to_time_unit(end_date.to_i)
 
-      partition_info = fetch_partition_info_from_db
+      partition_info = @partitions_fetcher.fetch_partition_info_from_db
 
       max_partition = @partitions_fetcher.fetch_latest_partition(partition_info)
-
       to_be_dropped = partitions_older_than_timestamp(start_timestamp,
                                                       partition_info)
       unless max_partition
         raise "Atleast one non future partition expected, but none found"
       end
-      to_be_added = _build_partition_data(max_partition.partition_timestamp,
+      to_be_added = _build_partition_data(max_partition.timestamp,
                                           end_timestamp,
                                           window_size)
       [to_be_dropped, to_be_added]
@@ -200,8 +199,8 @@ module SqlPartitioner
     #                 than given timestamp
     def partitions_older_than_timestamp(timestamp, partition_info = nil)
       @partitions_fetcher.non_future_partitions(partition_info).select do |p|
-        timestamp > p.partition_timestamp
-      end.map(&:partition_name)
+        timestamp > p.timestamp
+      end.map(&:name)
     end
 
     # fetch all partitions from information schema or input that hold records
@@ -218,7 +217,7 @@ module SqlPartitioner
       recent_partitions = non_future_partitions(partition_info).select do |p|
                             timestamp <= p.partition_timestamp
                           end
-      recent_partitions.map(&:partition_name) - Array(current_partition)
+      recent_partitions.map(&:name) - Array(current_partition)
     end
 
     # drop partitions that are older than the given timestamp

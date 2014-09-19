@@ -20,6 +20,10 @@ module SqlPartitioner
       @current_timestamp = current_timestamp
     end
 
+    def fetch_partition_info_from_db
+      SqlPartitioner::Partition.all(adapter, "events")
+    end
+
     # helper to format the partition_info into tabular form
     # @param [Array] array of partition info Structs
     # @return [String] formatted partitions in tabular form
@@ -61,9 +65,9 @@ module SqlPartitioner
     end
 
     # get all partitions that does not have timestamp as 'FUTURE_PARTITION_VALUE'
-    def non_future_partitions(partition_info = nil)
-      partition_info ||= Partition.all(adapter, table_name)
-      partition_info.reject { |p| future_partition?(p) }
+    def non_future_partitions(partitions = nil)
+      partitions ||= Partition.all(adapter, table_name)
+      partitions.reject { |p| future_partition?(p) }
     end
 
     # fetch the latest partition that is not a future partition i.e.(value
@@ -71,25 +75,25 @@ module SqlPartitioner
     # @param [Array] partition_info Array of partition info structs. if nil
     #                partition info is fetched from db
     # @return [Struct or NilClass] partition with maximum timestamp value
-    def fetch_latest_partition(partition_info = nil)
-      non_future_partitions(partition_info).max_by{ |p| p.partition_timestamp }
+    def fetch_latest_partition(partitions = nil)
+      non_future_partitions(partitions).max_by{ |p| p.timestamp }
     end
 
     #fetch the partition which is currently active. i.e  holds the records
     # generated now
-    def fetch_current_partition(partition_info = nil)
-      non_future_partitions(partition_info).select do |p|
-        p.partition_timestamp > self.current_timestamp
-      end.min_by { |p| p.partition_timestamp }
+    def fetch_current_partition(partitions = nil)
+      non_future_partitions(partitions).select do |p|
+        p.timestamp > self.current_timestamp
+      end.min_by { |p| p.timestamp }
     end
 
     #fetch the partition with oldest timestamp
-    def fetch_oldest_partition(partition_info = nil)
-      non_future_partitions(partition_info).min_by { |p| p.partition_timestamp }
+    def fetch_oldest_partition(partitions = nil)
+      non_future_partitions(partitions).min_by { |p| p.partition_timestamp }
     end
 
     def future_partition?(partition)
-      partition.partition_timestamp == FUTURE_PARTITION_VALUE
+      partition.timestamp == FUTURE_PARTITION_VALUE
     end
 
   end
