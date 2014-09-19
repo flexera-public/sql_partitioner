@@ -154,8 +154,43 @@ module SqlPartitioner
     def initialize_partitioning_in_days(days, dry_run = false)
       _validate_initialize_partitioning_in_days_params(days)
       partition_data = {}
-      days.sort.each do |days_form_now|
-        until_timestamp = self.current_timestamp + to_time_unit(60 * 60 * 24 * days_form_now)
+      days.sort.each do |days_from_now|
+        until_timestamp = self.current_timestamp + to_time_unit(60 * 60 * 24 * days_from_now)
+        partition_name  = name_from_timestamp(until_timestamp)
+        partition_data[partition_name] = until_timestamp
+      end
+      partition_data[FUTURE_PARTITION_NAME] = FUTURE_PARTITION_VALUE
+      initialize_partitioning(partition_data, dry_run)
+    end
+
+    # Initialize the partitions based on months relative to current timestamp.
+    # Number of partition will be equal to the number of months  provided.
+    # for example [-2,-1,0,1] will create 5 partitions of form
+    #   until_2014_07_01    1404198000000000
+    #   until_2014_08_01    1406876400000000
+    #   until_2014_09_01    1409554800000000
+    #   until_2014_10_01    1412146800000000
+    #   future              MAXVALUE
+    # In above example, -ve value for month will lead to partitions into past
+    # and +ve value for month will lead to partitions into future
+    #
+    # NOTE: This also used initialization of either:
+    #       { :current_time => calc_beginning_of_month } (easiest) 
+    #       or
+    #       { :current_timestamp => calc_beginning_of_month * time_unit_multiplier } 
+    #
+    # @param [Array] Array of months(Integer)
+    # @param [Boolean] dry run, default value is false. Query wont be executed
+    #                  if dry_run is set to true
+    # @return [Boolean] true if not dry run
+    # @return [String] sql to initialize partitions if dry run is true
+    # @raise [ArgumentError] if days is not array or if one of the
+    #                    days is not integer
+    def initialize_partitioning_in_months(months, dry_run = false)
+      _validate_initialize_partitioning_in_months_params(months)
+      partition_data = {}
+      months.sort.each do |months_from_now|
+        until_timestamp = to_time_unit((Time.at(from_time_unit(self.current_timestamp)) + months_from_now.months).to_i)
         partition_name  = name_from_timestamp(until_timestamp)
         partition_data[partition_name] = until_timestamp
       end
@@ -264,6 +299,19 @@ module SqlPartitioner
       true
     end
     private :_validate_initialize_partitioning_in_days_params
+
+
+    def _validate_initialize_partitioning_in_months_params(months)
+      msg = "days should be Array but #{months.class} found"
+      _raise_arg_err(msg) unless months.kind_of?(Array)
+      months.each do |months_from_now|
+       msg = "#{months_from_now} should be Integer, but"\
+             " #{months_from_now.class} found"
+       _raise_arg_err(msg) unless months_from_now.kind_of?(Integer)
+      end
+      true
+    end
+    private :_validate_initialize_partitioning_in_months_params
 
 
     def _validate_initialize_partitioning_params(partition_data)
