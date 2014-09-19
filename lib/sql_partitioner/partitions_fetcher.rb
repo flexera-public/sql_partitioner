@@ -46,16 +46,6 @@ module SqlPartitioner
       [seperator, header, seperator, body, seperator].join("\n")
     end
 
-    def with_lock_wait_timeout(timeout, &block)
-      lock_wait_timeout_before = adapter.select("SELECT @@local.lock_wait_timeout").first
-      adapter.execute("SET @@local.lock_wait_timeout = #{timeout}")
-      begin
-        return block.call
-      ensure
-        adapter.execute("SET @@local.lock_wait_timeout = #{lock_wait_timeout_before}")
-      end
-    end
-
     # logs the formatted partition info from information schema
     # @return [Boolean] true
     def display_partition_info

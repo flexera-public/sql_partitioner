@@ -162,33 +162,6 @@ module SqlPartitioner
       initialize_partitioning(partition_data, dry_run)
     end
 
-
-    # initialize partitioning on the given table based on partition_data
-    # provided.
-    # partition data should be of form
-    #   {partition_name1 => partition_timestamp_1 ,
-    #    partition_name2 => partition_timestamp_2...}
-    # For example:
-    #   {'until_2014_03_17' => 1395077901193149
-    #    'until_2014_04_01' => 1396373901193398}
-    #
-    # @param [Hash] partition data
-    # @param [Boolean] dry run, default value is false. Query wont be executed
-    #                  if dry_run is set to true
-    # @raise [ArgumentError] if partition data is not hash or if one of name id
-    #                    is not a String or if one of the value is not
-    #                    Integer
-    def initialize_partitioning(partition_data, dry_run = false)
-      _validate_initialize_partitioning_params(partition_data)
-      init_sql = SqlPartitioner::SQL.initialize_partitioning(table_name,
-                                                                  partition_data)
-      if dry_run
-        init_sql
-      else
-        _execute_and_display_partition_info(init_sql)
-      end
-    end
-
     # fetch all partitions from information schema or input that hold records
     # older than the timestamp provided
     #
@@ -263,27 +236,6 @@ module SqlPartitioner
       true
     end
     private :_validate_initialize_partitioning_in_days_params
-
-
-    def _validate_initialize_partitioning_params(partition_data)
-      unless partition_data.kind_of?(Hash)
-        _raise_arg_err "partition data should be Hash but"\
-                       " #{partition_data.class} found"
-      end
-      partition_data.each do |key, value|
-        unless key.kind_of?(String)
-          _raise_arg_err "partition name:#{key} should be String,"\
-                         "but #{key.class} found"
-        end
-        next if value == FUTURE_PARTITION_VALUE
-        unless value.kind_of?(Integer)
-          _raise_arg_err "partition timestamp:#{value} should be Integer,"\
-                         "but #{key.class} found"
-        end
-      end
-      true
-    end
-    private :_validate_initialize_partitioning_params
 
   end
 end
