@@ -94,12 +94,21 @@ module SqlPartitioner
           partition_size.years
       end
 
+      new_partition_data = {}
       # ensure partitions created at interval from latest thru target
       while (latest_part_time - Time.now)/interval.to_i < partitions_into_future.to_i
         latest_part_time += interval
         puts "Appending Partition Time of #{latest_part_time} as only #{((latest_part_time - Time.now)/interval.to_i).round - 1} partitions_into_future at #{partition_size} #{partition_interval} each"  
-        _append_partition(@tum.to_time_unit(latest_part_time.to_i), dry_run)
+        
+        new_partition_ts   = @tum.to_time_unit(latest_part_time.to_i)
+        new_partition_name = name_from_timestamp(new_partition_ts)
+        new_partition_data[new_partition_name] = new_partition_ts
       end
+
+      unless new_partition_data.empty?
+        reorg_future_partition(new_partition_data, dry_run)
+      end
+
       puts "Append: Latest Partition Time of #{latest_part_time} covers >= #{partitions_into_future} partitions_into_future at #{partition_size} #{partition_interval} each"
     end
 
