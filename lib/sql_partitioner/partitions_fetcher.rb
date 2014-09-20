@@ -24,36 +24,6 @@ module SqlPartitioner
       SqlPartitioner::Partition.all(adapter, "events")
     end
 
-    # helper to format the partition_info into tabular form
-    # @param [Array] array of partition info Structs
-    # @return [String] formatted partitions in tabular form
-    def self.format_partition_info(partitions)
-      padding = PARTITION_INFO_ATTRS.map do |attribute|
-                  max_length = partitions.map do |partition|
-                    partition.send(attribute).to_s.length
-                  end.max
-                  [attribute.to_s.length, max_length].max + 3
-                end
-      header = PARTITION_INFO_ATTRS.map.each_with_index do |attribute, index|
-                 attribute.to_s.ljust(padding[index])
-               end.join
-      body = partitions.map do |partition|
-               PARTITION_INFO_ATTRS.map.each_with_index do |attribute, index|
-                 partition.send(attribute).to_s.ljust(padding[index])
-               end.join
-             end.join("\n")
-      seperator = ''.ljust(padding.inject(&:+),'-')
-      [seperator, header, seperator, body, seperator].join("\n")
-    end
-
-    # logs the formatted partition info from information schema
-    # @return [Boolean] true
-    def display_partition_info
-      partition_info = Partition.all(adapter, table_name)
-      log "\n#{self.class.format_partition_info(partition_info)}", false
-      true
-    end
-
     # get all partitions that does not have timestamp as 'FUTURE_PARTITION_VALUE'
     def non_future_partitions(partitions = nil)
       partitions ||= Partition.all(adapter, table_name)

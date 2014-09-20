@@ -44,16 +44,8 @@ module SqlPartitioner
   end
 
   class Partition
-    FUTURE_PARTITION_NAME = 'future'
-
+    FUTURE_PARTITION_NAME  = 'future'
     FUTURE_PARTITION_VALUE = 'MAXVALUE'
-
-    PARTITION_INFO_ATTRS = [:ordinal_position,
-                            :partition_name,
-                            :partition_timestamp,
-                            :table_rows,
-                            :data_length,
-                            :index_length]
 
     def initialize(partition_data)
       @partition_data = partition_data
@@ -99,6 +91,44 @@ module SqlPartitioner
 
     def future_partition?
       self.timestamp == FUTURE_PARTITION_VALUE
+    end
+
+    def attributes
+      {
+        :ordinal_position  => ordinal_position,
+        :name              => name,
+        :timestamp         => timestamp,
+        :table_rows        => table_rows,
+        :data_length       => data_length,
+        :index_length      => index_length
+      }
+    end
+
+    # logs the formatted partition info from information schema
+    # @param [Array] array of partition objects
+    # @return [String] formatted partitions in tabular form
+    def self.to_log(partitions)
+      return "none" if partitions.empty?
+
+      partition_info_attrs = partitions.first.keys
+
+      padding = partition_info_attrs.map do |attribute|
+                  max_length = partitions.map do |partition|
+                    partition.send(attribute).to_s.length
+                  end.max
+                  [attribute.to_s.length, max_length].max + 3
+                end
+      header = partition_info_attrs.map.each_with_index do |attribute, index|
+                 attribute.to_s.ljust(padding[index])
+               end.join
+      body = partitions.map do |partition|
+               partition_info_attrs.map.each_with_index do |attribute, index|
+                 partition.send(attribute).to_s.ljust(padding[index])
+               end.join
+             end.join("\n")
+      seperator = ''.ljust(padding.inject(&:+),'-')
+
+      [seperator, header, seperator, body, seperator].join("\n")
     end
 
   end

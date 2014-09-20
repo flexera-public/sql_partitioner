@@ -210,7 +210,8 @@ module SqlPartitioner
           sql
         else
           _execute(sql)
-          @partitions_fetcher.display_partition_info
+          
+          log "\n#{Partition.to_log(Partition.all(adapter, table_name))}", false
         end
       else
         false
