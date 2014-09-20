@@ -116,6 +116,8 @@ module SqlPartitioner
     #                    is not a String or if one of the value is not
     #                    Integer
     def initialize_partitioning(partition_data, dry_run = false)
+      partition_data = partition_data.merge(FUTURE_PARTITION_NAME => FUTURE_PARTITION_VALUE)
+
       _validate_partition_data(partition_data)
 
       init_sql = SqlPartitioner::SQL.initialize_partitioning(table_name, partition_data)

@@ -1,44 +1,54 @@
 module SqlPartitioner
   class PartitionsManager < BasePartitionsManager
-    # Wrapper around append partition to add a partition to end with the
-    # given window size
-    # @param [Fixnum] partition_size, days covered by the new partition
+
+    # Initialize the partitions based on months relative to current timestamp.
+    # Number of partition will be equal to the number of months  provided.
+    # for example [-2,-1,0,1] will create 5 partitions of form
+    #   until_2014_07_01    1404198000000000
+    #   until_2014_08_01    1406876400000000
+    #   until_2014_09_01    1409554800000000
+    #   until_2014_10_01    1412146800000000
+    #   future              MAXVALUE
+    # In above example, -ve value for month will lead to partitions into past
+    # and +ve value for month will lead to partitions into future
+    #
+    # NOTE: This also used initialization of either:
+    #       { :current_time => calc_beginning_of_month } (easiest) 
+    #       or
+    #       { :current_timestamp => calc_beginning_of_month * time_unit_multiplier } 
+    #
+    # @param [Array] Array of months(Integer)
     # @param [Boolean] dry run, default value is false. Query wont be executed
     #                  if dry_run is set to true
-    # @return [Boolean] true if dry_run is false
-    # @return [String] reorg sql if dry run is true
-    # @raise [ArgumentError] if  window size is nil or not greater than 0
-    def append_partition(partition_size, dry_run = false)
-      if partition_size.nil? || partition_size <= 0
-        _raise_arg_err "Partition size should be > 0"
+    # @return [Boolean] true if not dry run
+    # @return [String] sql to initialize partitions if dry run is true
+    # @raise [ArgumentError] if days is not array or if one of the
+    #                    days is not integer
+    def initialize_partitioning_in_months(months, dry_run = false)
+      _validate_initialize_partitioning_in_months_params(months)
+
+      partition_data = {}
+      months.sort.each do |months_from_now|
+        until_timestamp = @tum.to_time_unit((Time.at(@tum.from_time_unit(self.current_timestamp)) + months_from_now.months).to_i)
+        partition_name  = name_from_timestamp(until_timestamp)
+        partition_data[partition_name] = until_timestamp
       end
 
-      latest_partition = fetch_latest_partition
-      raise "Latest partition not found" unless latest_partition
-
-      until_timestamp = latest_partition.timestamp +
-                        @tum.days_to_time_unit(partition_size)
-
-      _append_partition(until_timestamp, dry_run)
+      initialize_partitioning(partition_data, dry_run)
     end
 
-    # Reorganizes the future partition into a new partition with the
-    # timestamp provided. Partition name will be generated from timestamp
-    #
-    # @param [Fixnum] until_timestamp, timestamp of the partition
-    # @param [Boolean] dry run, default value is false. Query wont be executed
-    #                  if dry_run is set to true
-    # @return [Boolean] true if dry_run is false
-    # @return [String] reorg sql if dry run is true
-    # @raise [ArgumentError] if timestamp provided is not Integer
-    def _append_partition(until_timestamp, dry_run = false)
-      _validate_timestamp(until_timestamp)
-
-      new_partition_name = name_from_timestamp(until_timestamp)
-      new_partition_data = {new_partition_name => until_timestamp}
-      reorg_future_partition(new_partition_data, dry_run)
+    def _validate_initialize_partitioning_in_months_params(months)
+      msg = "days should be Array but #{months.class} found"
+      _raise_arg_err(msg) unless months.kind_of?(Array)
+      months.each do |months_from_now|
+       msg = "#{months_from_now} should be Integer, but"\
+             " #{months_from_now.class} found"
+       _raise_arg_err(msg) unless months_from_now.kind_of?(Integer)
+      end
+      true
     end
-    private :_append_partition
+    private :_validate_initialize_partitioning_in_months_params
+
 
     #------------------------------------------
 
@@ -115,8 +125,10 @@ module SqlPartitioner
       if partitions.blank?
         puts "Drop: No partitions older than #{timestamp}, i.e. #{Time.at(@tum.from_time_unit(timestamp))}"
       else
-        puts "Dropping partitions: #{partitions.map(&:name).inspect}"
-        drop_partitions(partitions, dry_run)
+        partition_names = partitions.map(&:name)
+
+        puts "Dropping partitions: #{partition_names.inspect}"
+        drop_partitions(partition_names, dry_run)
       end
     end
   end
