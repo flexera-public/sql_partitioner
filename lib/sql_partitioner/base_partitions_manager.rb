@@ -131,8 +131,8 @@ module SqlPartitioner
     #                        not a string
     def drop_partitions(partition_names, dry_run = false)
       _validate_drop_partitions_names(partition_names)
-      drop_sql = SqlPartitioner::SQL.drop_partitions(table_name, partition_names)
 
+      drop_sql = SqlPartitioner::SQL.drop_partitions(table_name, partition_names)
       _execute_and_display_partition_info(drop_sql)
     end
 

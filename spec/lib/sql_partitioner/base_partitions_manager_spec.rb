@@ -121,4 +121,22 @@ describe "BasePartitionsManager" do
       end
     end
   end
+
+  describe "#name_from_timestamp" do
+    context "with future partition timestamp" do
+      it "should return future partition name" do
+        result = @partition_manager.send(:name_from_timestamp, SqlPartitioner::BasePartitionsManager::FUTURE_PARTITION_VALUE)
+        expect(result).to eq(SqlPartitioner::BasePartitionsManager::FUTURE_PARTITION_NAME)
+      end
+    end
+    context "with a partition timestamp" do
+      it "should return future partition name" do
+        ts = Time.mktime(2014, 01, 15)
+
+        result = @partition_manager.send(:name_from_timestamp, ts.to_i)
+        expect(result).to eq("until_2014_01_15")
+      end
+    end
+  end
+
 end
