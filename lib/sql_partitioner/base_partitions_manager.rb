@@ -22,12 +22,26 @@ module SqlPartitioner
     #----------- Validation Helpers ---------------
 
     def _validate_timestamp(timestamp)
+      return true if timestamp == FUTURE_PARTITION_VALUE
+
       if !timestamp.kind_of?(Integer) || timestamp < 0
-        _raise_arg_err  "timestamp should be a positive integer"
+        _raise_arg_err  "timestamp should be a positive integer,"\
+                        "but #{timestamp.class} found"
       end
+
       true
     end
     private :_validate_timestamp
+
+    def _validate_partition_name(partition_name)
+      unless partition_name.kind_of?(String)
+        _raise_arg_err "Invalid value #{partition_name}. String expected but"\
+                       " #{partition_name.class} found"
+      end
+
+      true
+    end
+    private :_validate_partition_name
 
     def _validate_partition_names(partition_names)
       unless partition_names.kind_of?(Array)
@@ -36,10 +50,7 @@ module SqlPartitioner
         _raise_arg_err(msg)
       end
       partition_names.each do |name|
-        unless name.kind_of?(String)
-          _raise_arg_err "Invalid value #{name}. String expected but"\
-                         " #{name.class} found"
-        end
+        _validate_partition_name(name)
       end
 
       true
@@ -52,9 +63,6 @@ module SqlPartitioner
       if active_partition = Partition.all(adapter, table_name).current_partition(self.current_timestamp)
         black_listed_partitions << active_partition.name
       end
-
-puts "partition_names: #{partition_names.inspect}"
-puts "black_listed_partitions: #{black_listed_partitions.inspect}"
 
       if (partition_names & black_listed_partitions).any?
        _raise_arg_err "current and future partition can never be dropped"
@@ -78,15 +86,13 @@ puts "black_listed_partitions: #{black_listed_partitions.inspect}"
                        " #{partition_data.class} found"
       end
       partition_data.each_pair do |key, value|
-        unless key.kind_of?(String)
-          _raise_arg_err "partition name:#{key} should be String,"\
-                         "but #{key.class} found"
-        end
+        _validate_partition_name(key)
+        _validate_timestamp(value)
 
-        next if value == FUTURE_PARTITION_VALUE
-        unless value.kind_of?(Integer)
-          _raise_arg_err "partition timestamp:#{value} should be Integer,"\
-                         "but #{key.class} found"
+        if key == FUTURE_PARTITION_NAME && value != FUTURE_PARTITION_VALUE ||
+           key != FUTURE_PARTITION_NAME && value == FUTURE_PARTITION_VALUE
+          _raise_arg_err "future partion name '#{FUTURE_PARTITION_NAME}' must use timestamp '#{FUTURE_PARTITION_VALUE}',"\
+                         "but got name #{key} and timestamp #{value}"
         end
       end
 

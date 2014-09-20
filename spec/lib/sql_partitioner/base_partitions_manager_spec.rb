@@ -13,6 +13,36 @@ describe "BasePartitionsManager" do
     )
   end
 
+  describe "#_validate_partition_data" do
+    context "when input is not valid" do
+      it "should raise error when future partion is not pointing to proper value" do
+        lambda {
+          @partition_manager.send(:_validate_partition_data, {
+              SqlPartitioner::BasePartitionsManager::FUTURE_PARTITION_NAME => 1
+            }
+          )
+        }.should raise_error(ArgumentError, /future partion name/)
+      end
+      it "should raise error when future partion is not pointing to proper value" do
+        lambda {
+          @partition_manager.send(:_validate_partition_data, {
+              "name" => SqlPartitioner::BasePartitionsManager::FUTURE_PARTITION_VALUE
+            }
+          )
+        }.should raise_error(ArgumentError, /future partion name/)
+      end
+    end
+    context "when input is valid" do
+      it "should return true" do
+        expect(@partition_manager.send(:_validate_partition_data, {
+            SqlPartitioner::BasePartitionsManager::FUTURE_PARTITION_NAME =>
+            SqlPartitioner::BasePartitionsManager::FUTURE_PARTITION_VALUE
+          }
+        )).to be true
+      end
+    end
+  end
+
   describe "#_validate_timestamp" do
     context "when input is not valid" do
       it "should raise error with a String" do
@@ -38,17 +68,27 @@ describe "BasePartitionsManager" do
     end
   end
 
+  describe "#_validate_partition_name" do
+    context "when input is not valid" do
+      it "should raise error when not String" do
+        lambda {
+          @partition_manager.send(:_validate_partition_name, 1)
+        }.should raise_error(ArgumentError, /String expected/)
+      end
+    end
+    context "when input is valid" do
+      it "should return true" do
+        expect(@partition_manager.send(:_validate_partition_name, "bar")).to be true
+      end
+    end
+  end
+
   describe "#_validate_partition_names" do
     context "when input is not valid" do
       it "should raise error when not an array is passed" do
         lambda {
           @partition_manager.send(:_validate_partition_names, {})
         }.should raise_error(ArgumentError, /should be array/)
-      end
-      it "should raise error when not every value is a String" do
-        lambda {
-          @partition_manager.send(:_validate_partition_names, ["foo", 1])
-        }.should raise_error(ArgumentError, /String expected/)
       end
     end
     context "when input is valid" do
