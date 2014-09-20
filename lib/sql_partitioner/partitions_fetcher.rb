@@ -34,11 +34,11 @@ module SqlPartitioner
                   end.max
                   [attribute.to_s.length, max_length].max + 3
                 end
-      header = PARTITION_INFO_ATTRS.map.with_index do |attribute, index|
+      header = PARTITION_INFO_ATTRS.map.each_with_index do |attribute, index|
                  attribute.to_s.ljust(padding[index])
                end.join
       body = partitions.map do |partition|
-               PARTITION_INFO_ATTRS.map.with_index do |attribute, index|
+               PARTITION_INFO_ATTRS.map.each_with_index do |attribute, index|
                  partition.send(attribute).to_s.ljust(padding[index])
                end.join
              end.join("\n")

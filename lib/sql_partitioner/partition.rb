@@ -1,6 +1,20 @@
 module SqlPartitioner
   class PartitionCollection < Array
 
+    # fetch all partitions from information schema or input that hold records
+    # older than the timestamp provided
+    #
+    # @param [Fixnum] timestamp
+    # @param [Array] partition_info Array of partition info structs. if nil
+    #                partition info is fetched from db
+    # @return [Array] Array of partition name(String) that hold data older
+    #                 than given timestamp
+    def older_than_timestamp(timestamp)
+      non_future_partitions.select do |p|
+        timestamp > p.timestamp
+      end.map(&:name)
+    end
+
     #fetch the partition which is currently active. i.e  holds the records
     # generated now
     def current_partition(current_timestamp)

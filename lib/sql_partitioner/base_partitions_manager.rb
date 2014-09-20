@@ -11,7 +11,7 @@ module SqlPartitioner
       @adapter            = options[:adapter]
       @tum                = TimeUnitManager.new(options[:time_unit] || :seconds)
 
-      @current_timestamp  = options[:current_timestamp] || @tum.to_time_unit(Time.now.to_i)
+      @current_timestamp  = options[:current_timestamp] || @tum.to_time_unit((options[:current_time] || Time.now).to_i)
       @table_name         = options[:table_name]
       @logger             = options[:logger]
       @lock_wait_timeout  = options[:lock_wait_timeout]
