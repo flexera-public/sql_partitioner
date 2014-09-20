@@ -138,5 +138,4 @@ describe "BasePartitionsManager" do
       end
     end
   end
-
 end

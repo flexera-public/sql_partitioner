@@ -116,7 +116,7 @@ module SqlPartitioner
     #                    is not a String or if one of the value is not
     #                    Integer
     def initialize_partitioning(partition_data, dry_run = false)
-      _validate_initialize_partitioning_params(partition_data)
+      _validate_partition_data(partition_data)
 
       init_sql = SqlPartitioner::SQL.initialize_partitioning(table_name, partition_data)
       _execute_and_display_partition_info(init_sql)

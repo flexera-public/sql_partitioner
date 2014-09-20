@@ -237,5 +237,6 @@ module SqlPartitioner
     end
     private :_validate_initialize_partitioning_in_days_params
 
+
   end
 end
