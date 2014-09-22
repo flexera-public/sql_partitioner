@@ -163,6 +163,8 @@ module SqlPartitioner
       initialize_partitioning(partition_data, dry_run)
     end
 
+# TODO: move this into active_support requirement
+
     # Initialize the partitions based on months relative to current timestamp.
     # Number of partition will be equal to the number of months  provided.
     # for example [-2,-1,0,1] will create 5 partitions of form
@@ -287,7 +289,6 @@ module SqlPartitioner
       end
     end
 
-
     def _validate_initialize_partitioning_in_days_params(days)
       msg = "days should be Array but #{days.class} found"
       _raise_arg_err(msg) unless days.kind_of?(Array)
@@ -301,6 +302,7 @@ module SqlPartitioner
     private :_validate_initialize_partitioning_in_days_params
 
 
+# TODO: move this
     def _validate_initialize_partitioning_in_months_params(months)
       msg = "days should be Array but #{months.class} found"
       _raise_arg_err(msg) unless months.kind_of?(Array)

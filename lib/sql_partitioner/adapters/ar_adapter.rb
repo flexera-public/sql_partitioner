@@ -1,4 +1,5 @@
 require_relative "base_adapter"
+require "active_record"
 
 module SqlPartitioner
 
