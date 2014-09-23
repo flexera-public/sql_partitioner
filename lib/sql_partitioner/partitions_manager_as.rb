@@ -31,7 +31,7 @@ module SqlPartitioner
 
       partition_data = {}
       months.sort.each do |months_from_now|
-        until_timestamp = @tum.to_time_unit((Time.at(@tum.from_time_unit(self.current_timestamp)) + months_from_now.months).to_i)
+        until_timestamp = @tum.advance(self.current_timestamp, :month, months_from_now)
         partition_name  = name_from_timestamp(until_timestamp)
         partition_data[partition_name] = until_timestamp
       end
@@ -51,10 +51,10 @@ module SqlPartitioner
     end
     private :_validate_initialize_partitioning_in_months_params
 
-
     # Wrapper around append partition to add a partition to end with the
     # given window size
-    # @param [Symbol] partition_interval: [:hours, :days, :months, :years]
+    #
+    # @param [Symbol] partition_interval: [:days, :months]
     # @param [Fixnum] partition_size, intervals covered by the new partition
     # @param [Fixnum] partitions_into_future, how many partitions into the future should be covered
     # @param [Boolean] dry run, default value is false. Query wont be executed
@@ -62,7 +62,7 @@ module SqlPartitioner
     # @return [Boolean] true if dry_run is false
     # @return [String] reorg sql if dry run is true
     # @raise [ArgumentError] if  window size is nil or not greater than 0
-    VALID_PARTITION_INTERVALS = [:second, :minute, :hour, :day, :month, :year]
+
     def append_partition_intervals(partition_interval, partition_size, partitions_into_future = 1, dry_run = false)
       if partition_interval.nil? || !VALID_PARTITION_INTERVALS.include?(partition_interval)
         _raise_arg_err "partition_interval must be one of: #{VALID_PARTITION_INTERVALS.inspect}"
@@ -76,30 +76,26 @@ module SqlPartitioner
 
       partitions = Partition.all(adapter, table_name)
       latest_partition = partitions.latest_partition
-      latest_part_time = Time.at(@tum.from_time_unit(latest_partition.timestamp))
 
-      interval = case partition_interval
-        when :second
-          partition_size.seconds
-        when :minute
-          partition_size.minutes
-        when :hour
-          partition_size.hours
-        when :day
-          partition_size.days
-        when :month
-          partition_size.months
-        when :year
-          partition_size.years
-      end
+      latest_part_date_time = @tum.from_time_unit_to_date_time(latest_partition.timestamp)
+      latest_part_in_secs = latest_part_date_time.strftime('%s').to_i
 
       new_partition_data = {}
       # ensure partitions created at interval from latest thru target
-      while (latest_part_time - Time.now)/interval.to_i < partitions_into_future.to_i
-        latest_part_time += interval
-        puts "Appending Partition Time of #{latest_part_time} as only #{((latest_part_time - Time.now)/interval.to_i).round - 1} partitions_into_future at #{partition_size} #{partition_interval} each"  
+      while (latest_part_in_secs - @tum.from_time_unit(current_timestamp))/interval.to_i < partitions_into_future.to_i
+
+        latest_part_date_time = TimeUnitManager.advance_date_time(latest_part_date_time, partition_interval, partition_size)
+        latest_part_in_secs = latest_part_date_time.strftime('%s').to_i
+
+        partitions_into_future = ((latest_part_in_secs - @tum.from_time_unit(current_timestamp))/interval.to_i).round - 1
+
+        msg = <<-MSG
+          Appending Partition Time of #{latest_part_date_time} as only #{partitions_into_future} 
+          partitions_into_future at #{partition_size} #{partition_interval} each
+        MSG
+        log(msg)
         
-        new_partition_ts   = @tum.to_time_unit(latest_part_time.to_i)
+        new_partition_ts   = @tum.to_time_unit(latest_part_in_secs)
         new_partition_name = name_from_timestamp(new_partition_ts)
         new_partition_data[new_partition_name] = new_partition_ts
       end
