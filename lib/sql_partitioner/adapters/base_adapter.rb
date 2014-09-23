@@ -7,11 +7,11 @@ module SqlPartitioner
     end
 
     def execute(*args)
-      aise "execute(*args) MUST BE IMPLEMENTED!"
+      raise "execute(*args) MUST BE IMPLEMENTED!"
     end
 
     def schema_name
-      aise "schema_name MUST BE IMPLEMENTED!"
+      raise "schema_name MUST BE IMPLEMENTED!"
     end
   end
 
