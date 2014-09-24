@@ -27,5 +27,5 @@ Gem::Specification.new do |gem|
   # Test suite
   # ---------------------------------------------------------------------
   gem.add_development_dependency("rspec",        '3.0.0')
-  gem.add_development_dependency('ruby-debug',   '0.10.4')
+#  gem.add_development_dependency('ruby-debug',   '0.10.4')
 end
