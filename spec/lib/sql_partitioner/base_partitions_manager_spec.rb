@@ -13,6 +13,22 @@ describe "BasePartitionsManager" do
   end
 
   describe "#_validate_partition_data" do
+    before(:each) do
+      adapter = SqlPartitioner::ARAdapter.new(ActiveRecord::Base.connection)
+
+      @partition_manager = SqlPartitioner::BasePartitionsManager.new(
+        :adapter      => adapter,
+        :current_time => Time.utc(2014,04,18),
+        :table_name   => 'events',
+        :logger       => Logger.new(STDOUT)
+      )
+    end
+    it "should be great" do
+      @partition_manager.initialize_partitioning({'until_2014_03_17' => 1395077901193149})
+    end
+  end
+
+  describe "#_validate_partition_data" do
     context "when input is not valid" do
       it "should raise error when future partion is not pointing to proper value" do
         lambda {
