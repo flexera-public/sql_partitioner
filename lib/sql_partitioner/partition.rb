@@ -110,7 +110,7 @@ module SqlPartitioner
     def self.to_log(partitions)
       return "none" if partitions.empty?
 
-      partition_info_attrs = partitions.first.keys
+      partition_info_attrs = partitions.first.attributes.keys
 
       padding = partition_info_attrs.map do |attribute|
                   max_length = partitions.map do |partition|

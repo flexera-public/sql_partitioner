@@ -209,8 +209,7 @@ module SqlPartitioner
         else
           _execute(sql)
        
-      # TODO - crashing :(   
-      #    log "\n#{Partition.to_log(Partition.all(adapter, table_name))}", false
+          log "\n#{Partition.to_log(Partition.all(adapter, table_name))}", false
         end
       else
         false
