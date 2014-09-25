@@ -7,7 +7,7 @@ describe "PartitionsManager" do
     @partition_manager = SqlPartitioner::PartitionsManager.new(
       :adapter      => @adapter,
       :current_time => Time.utc(2014,01,01),
-      :table_name   => 'events',
+      :table_name   => 'test_events',
       :logger       => Logger.new(STDOUT)
     )
   end

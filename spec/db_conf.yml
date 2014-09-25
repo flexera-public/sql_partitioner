@@ -1,0 +1,7 @@
+test:
+  adapter: mysql
+  database: sql_partitioner_test
+  username: root
+  password:
+  host: localhost
+
