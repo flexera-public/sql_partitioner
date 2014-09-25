@@ -116,14 +116,13 @@ module SqlPartitioner
       drop_partitions_older_than(timestamp, dry_run)
     end
 
-    # KEEP
     # drop partitions that are older than the given timestamp
     # @param [Fixnum] timestamp partitions older than this timestamp will be
     #                           dropped
     # @param [Boolean] dry run, default value is false. Query wont be executed
     #                  if dry_run is set to true
     def drop_partitions_older_than(timestamp, dry_run = false)
-      partitions = Partition.all(adapter, table_name).older_than_timestamp(timestamp).compact
+      partitions = Partition.all(adapter, table_name).older_than_timestamp(timestamp)
 
       if partitions.blank?
         msg = <<-MSG
