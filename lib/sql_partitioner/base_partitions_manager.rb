@@ -179,7 +179,7 @@ module SqlPartitioner
     # @return [Boolean] true
     def _execute(sql)
       if @lock_wait_timeout
-        with_lock_wait_timeout(@lock_wait_timeout) do
+        SqlPartitioner::LockWaitTimeoutHandler.with_lock_wait_timeout(@adapter, @lock_wait_timeout) do
           adapter.execute(sql)
         end
       else
@@ -187,17 +187,6 @@ module SqlPartitioner
       end
     end
     private :_execute
-
-    def with_lock_wait_timeout(timeout, &block)
-      lock_wait_timeout_before = adapter.select("SELECT @@local.lock_wait_timeout").first
-      adapter.execute("SET @@local.lock_wait_timeout = ?", timeout)
-      begin
-        return block.call
-      ensure
-        adapter.execute("SET @@local.lock_wait_timeout = ?", lock_wait_timeout_before.to_i)
-      end
-    end
-    private :with_lock_wait_timeout
 
     # executes the sql and then displays the partition info
     # @param [String] sql to be executed

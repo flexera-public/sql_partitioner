@@ -1,4 +1,5 @@
 # standard requires
+require 'sql_partitioner/lock_wait_timeout_handler'
 require 'sql_partitioner/partition'
 require 'sql_partitioner/time_unit_manager'
 require 'sql_partitioner/sql_helper'
