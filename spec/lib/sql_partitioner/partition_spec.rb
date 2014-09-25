@@ -150,16 +150,92 @@ describe "PartitionCollection" do
         partition.timestamp.should == 1395014400
       end
     end
+  end
+end
 
+
+describe "Partition" do
+  before(:each) do
+    @ar_adapter = SqlPartitioner::ARAdapter.new(ActiveRecord::Base.connection)
+
+    @partition_manager = SqlPartitioner::BasePartitionsManager.new(
+      :adapter      => @ar_adapter,
+      :current_time => Time.utc(2014,04,18),
+      :table_name   => 'events',
+      :logger       => Logger.new(STDOUT)
+    )
+  end
+  describe ".all" do
     context "with no partitions" do
+      it "should an empty PartitionCollection" do
+        SqlPartitioner::Partition.all(@ar_adapter, 'events').should == []
+      end
+    end
+    context "with some partitions" do
       before(:each) do
-        @partition_manager.initialize_partitioning({})
+        @partitions = {'until_2014_03_17' => 1395014400}
+        @partition_manager.initialize_partitioning(@partitions)
       end
 
-      it "should not return the future partition" do
-        SqlPartitioner::Partition.all(@ar_adapter, 'events').oldest_partition.should == nil
+      it "should return a PartitionCollection containing all the partitions" do
+        existing_partition_ts = SqlPartitioner::SQL.sort_partition_data(@partitions).last[1]
+        partition = SqlPartitioner::Partition.all(@ar_adapter, 'events').map{|p| [p.name, p.timestamp]}.should == [
+          ['until_2014_03_17', 1395014400],
+          ["future", "MAXVALUE"]
+        ]
       end
     end
   end
+
+  describe "#future_partition?" do
+    before(:each) do
+      @partitions = {'until_2014_03_17' => 1395014400}
+      @partition_manager.initialize_partitioning(@partitions)
+    end
+
+    it "should return true for the future partition" do
+      SqlPartitioner::Partition.all(@ar_adapter, 'events').last.future_partition?.should == true
+    end
+    it "should return false for non-future partition" do
+      SqlPartitioner::Partition.all(@ar_adapter, 'events').first.future_partition?.should == false
+    end
+  end
+
+  describe "#timestamp" do
+    before(:each) do
+      @partitions = {'until_2014_03_17' => 1395014400}
+      @partition_manager.initialize_partitioning(@partitions)
+    end
+
+    it "should return 'MAXVALUE' for the future partition" do
+      SqlPartitioner::Partition.all(@ar_adapter, 'events').last.timestamp.should == SqlPartitioner::Partition::FUTURE_PARTITION_VALUE
+    end
+    it "should return the timestamp for non-future partition" do
+      SqlPartitioner::Partition.all(@ar_adapter, 'events').first.timestamp.should == @partitions.values.last
+    end
+  end
+
+  describe "#to_log" do
+    before(:each) do
+      @partitions = {'until_2014_03_17' => 1395014400}
+      @partition_manager.initialize_partitioning(@partitions)
+    end
+
+    it "should return 'none' for no partitions" do
+      SqlPartitioner::Partition.to_log([]).should == 'none'
+    end
+
+    it "should return a pretty log message with partitions" do
+      log_msg =  "---------------------------------------------------------------------------------------------\n" +
+                 "ordinal_position   name               timestamp    table_rows   data_length   index_length   \n" +
+                 "---------------------------------------------------------------------------------------------\n" +
+                 "1                  until_2014_03_17   1395014400   0            16384         0              \n" +
+                 "2                  future             MAXVALUE     0            16384         0              \n" +
+                 "---------------------------------------------------------------------------------------------"
+
+      SqlPartitioner::Partition.to_log(SqlPartitioner::Partition.all(@ar_adapter, 'events')).should == log_msg
+    end
+  end
+
 end
 
