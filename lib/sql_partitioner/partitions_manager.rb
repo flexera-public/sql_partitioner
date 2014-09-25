@@ -94,12 +94,11 @@ module SqlPartitioner
 
       if new_partition_data.empty?
         msg = <<-MSG
-          Append: Latest Partition Time of #{latest_partition.timestamp}, i.e. #{Time.at(@tum.from_time_unit(latest_partition.timestamp))} 
-                  covers >= #{partitions_into_future} partitions_into_future at #{partition_size} #{partition_interval} each
+          Append: No-Op - Latest Partition Time of #{latest_partition.timestamp}, i.e. #{Time.at(@tum.from_time_unit(latest_partition.timestamp))} covers >= #{days_into_future} days_into_future
         MSG
       else
         msg = <<-MSG
-          Append: appending the following new partitions: #{new_partition_data.inspect}
+          Append: Appending the following new partitions: #{new_partition_data.inspect}
         MSG
         reorg_future_partition(new_partition_data, dry_run)
       end
@@ -116,7 +115,6 @@ module SqlPartitioner
       drop_partitions_older_than(timestamp, dry_run)
     end
 
-    # KEEP
     # drop partitions that are older than the given timestamp
     # @param [Fixnum] timestamp partitions older than this timestamp will be
     #                           dropped
@@ -127,7 +125,7 @@ module SqlPartitioner
 
       if partitions.blank?
         msg = <<-MSG
-          Drop: No partitions older than #{timestamp}, i.e. #{Time.at(@tum.from_time_unit(timestamp))}
+          Drop: No-Op - No partitions older than #{timestamp}, i.e. #{Time.at(@tum.from_time_unit(timestamp))} to drop
         MSG
       else
         partition_names = partitions.map(&:name)
