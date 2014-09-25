@@ -2,7 +2,11 @@ module SqlPartitioner
   class TimeUnitManager
     require 'date'
 
+    SUPPORTED_TIME_UNITS = [:seconds, :micro_seconds]
+
     def initialize(time_unit)
+      raise ArgumentError.new("Invalid time unit #{time_unit} passed") if !SUPPORTED_TIME_UNITS.include?(time_unit)
+
       @time_unit = time_unit
     end
 
