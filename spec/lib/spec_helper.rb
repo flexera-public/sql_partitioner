@@ -20,6 +20,13 @@ RSpec.configure do |config|
     db_conf = YAML.load_file('spec/db_conf.yml')
 
     ActiveRecord::Base.establish_connection(db_conf["test"])
+  end
+
+  config.before :each do
+    sql = <<-SQL
+      DROP TABLE IF EXISTS `events`
+    SQL
+    ActiveRecord::Base.connection.execute(sql)
 
     sql = <<-SQL
       CREATE TABLE IF NOT EXISTS `events` (
@@ -29,5 +36,6 @@ RSpec.configure do |config|
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8
     SQL
     ActiveRecord::Base.connection.execute(sql)
+
   end
 end
