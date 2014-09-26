@@ -4,7 +4,7 @@ require 'logger'
 
 #require 'ruby-debug' # enable debugger support
 
-#require 'active_record'
+require 'active_record'
 require 'data_mapper'
 
 # enable both should and expect syntax in rspec without deprecation warnings

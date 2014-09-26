@@ -44,21 +44,9 @@ Gem::Specification.new do |gem|
   dm_gems_version   = "1.2.0"
 
   gem.add_development_dependency("data_objects", do_gems_version)
-  gem.add_development_dependency("do_sqlite3",   do_gems_version)
   gem.add_development_dependency("do_mysql",     do_gems_version)
 
-  # set version 1.2.1 to pick up a fix for ruby 2.1 compatibility
   gem.add_development_dependency('data_mapper',       dm_gems_version)
-  gem.add_development_dependency('dm-core', "1.2.1")
-  gem.add_development_dependency('dm-aggregates',     dm_gems_version)
-  gem.add_development_dependency('dm-migrations',     dm_gems_version)
-  gem.add_development_dependency('dm-timestamps',     dm_gems_version)
-  gem.add_development_dependency('dm-types',          dm_gems_version)
-  gem.add_development_dependency('dm-validations',    dm_gems_version)
-  gem.add_development_dependency('dm-serializer',     dm_gems_version)
-  gem.add_development_dependency('dm-constraints',    dm_gems_version)
-  gem.add_development_dependency('dm-observer',       dm_gems_version)
-  gem.add_development_dependency('dm-sqlite-adapter', dm_gems_version)
   gem.add_development_dependency('dm-mysql-adapter',  dm_gems_version)
 
 
