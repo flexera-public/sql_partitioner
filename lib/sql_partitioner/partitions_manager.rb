@@ -16,7 +16,10 @@ module SqlPartitioner
     def initialize_partitioning_in_intervals(days_into_future, partition_size_unit = :months, partition_size = 1, dry_run = false)
       _validate_initialize_partitioning_in_intervals_params(days_into_future)
 
-      partition_data = partitions_to_append(@current_timestamp, partition_size_unit, partition_size, days_into_future)
+      start_ts = @tum.advance(current_timestamp, :days, -days_in_past)
+      end_ts   = @tum.advance(current_timestamp, :days, days_into_future)
+
+      partition_data = partitions_to_append_by_date_range(start_ts, end_ts, partition_size_unit, partition_size)
       initialize_partitioning(partition_data, dry_run)
     end
 
@@ -41,26 +44,74 @@ module SqlPartitioner
       if partition_size_unit.nil? || !VALID_PARTITION_SIZE_UNITS.include?(partition_size_unit)
         _raise_arg_err "partition_size_unit must be one of: #{VALID_PARTITION_SIZE_UNITS.inspect}"
       end
-      if partition_size.nil? || partition_size <= 0
-        _raise_arg_err "partition_size should be > 0"
-      end
       if days_into_future.nil? || days_into_future <= 0
         _raise_arg_err "partitions_into_future should be > 0"
       end
 
-      # ensure partitions created at interval from latest thru target
-      current_timestamp_date_time = @tum.from_time_unit_to_date_time(current_timestamp)
-      date_time_to_be_covered     = TimeUnitManager.advance_date_time(current_timestamp_date_time, :days, days_into_future)
+      end_timestamp  = @tum.advance(current_timestamp, :days, days_into_future)
+      partitions_to_append_by_date_range(partition_start_timestamp, end_timestamp, partition_size_unit, partition_size)
+    end
 
-      latest_part_date_time = @tum.from_time_unit_to_date_time(partition_start_timestamp)
+    # Get partition_data hash based on the last partition's timestamp and covering end_timestamp
+    #
+    # @param [Fixnum] partition_start_timestamp, timestamp of last partition
+    # @param [Fixnum] end_timestamp, timestamp which the newest partition needs to include
+    # @param [Symbol] partition_size_unit: [:days, :months]
+    # @param [Fixnum] partition_size, intervals covered by the new partition
+    #
+    # @return [Hash] partition_data hash
+    def partitions_to_append_by_date_range(partition_start_timestamp, end_timestamp, partition_size_unit, partition_size)
+      num_partitions = num_partitions_for(partition_start_timestamp, end_timestamp, partition_size_unit, partition_size)
+      partitions_to_append_since(partition_start_timestamp, partition_size_unit, partition_size, num_partitions)
+    end
+
+    # Get number of partitions to create starting from partition_start_timestamp and covering end_timestamp
+    #
+    # @param [Fixnum] partition_start_timestamp, timestamp of last partition
+    # @param [Fixnum] end_timestamp, timestamp which the newest partition needs to include
+    # @param [Symbol] partition_size_unit: [:days, :months]
+    # @param [Fixnum] partition_size, intervals covered by the new partition
+    #
+    # @return [Hash] partition_data hash
+    def num_partitions_for(partition_start_timestamp, end_timestamp, partition_size_unit, partition_size)
+      new_start_timestamp = partition_start_timestamp
+
+      num_partitions = 0
+      while new_start_timestamp < end_timestamp
+        new_start_timestamp = @tum.advance(new_start_timestamp, partition_size_unit, partition_size)
+
+        num_partitions += 1
+      end
+
+      num_partitions
+    end
+
+    VALID_PARTITION_INTERVALS = [:months, :days]
+
+    # Get partition_data hash based on the last partition's timestamp
+    #
+    # @param [Fixnum] partition_start_timestamp, timestamp of last partition
+    # @param [Symbol] partition_size_unit: [:days, :months]
+    # @param [Fixnum] partition_size, intervals covered by the new partition
+    # @param [Fixnum] num_partitions, how many partitions should be created
+    #
+    # @return [Hash] partition_data hash
+    def partitions_to_append_since(partition_start_timestamp, partition_size_unit, partition_size, num_partitions)
+      if partition_size_unit.nil? || !VALID_PARTITION_INTERVALS.include?(partition_size_unit)
+        _raise_arg_err "partition_size_unit must be one of: #{VALID_PARTITION_INTERVALS.inspect}"
+      end
+      if partition_size.nil? || partition_size <= 0
+        _raise_arg_err "partition_size should be > 0"
+      end
+
+      new_start_timestamp = partition_start_timestamp
+
       new_partition_data    = {}
+      num_partitions.times do |i|
+        new_start_timestamp = @tum.advance(new_start_timestamp, partition_size_unit, partition_size)
 
-      while latest_part_date_time < date_time_to_be_covered
-        latest_part_date_time = TimeUnitManager.advance_date_time(latest_part_date_time, partition_size_unit, partition_size)
-
-        new_partition_ts   = @tum.to_time_unit(latest_part_date_time.strftime('%s').to_i)
-        new_partition_name = name_from_timestamp(new_partition_ts)
-        new_partition_data[new_partition_name] = new_partition_ts
+        new_partition_name = name_from_timestamp(new_start_timestamp)
+        new_partition_data[new_partition_name] = new_start_timestamp
       end
 
       new_partition_data
