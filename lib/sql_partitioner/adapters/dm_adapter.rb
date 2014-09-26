@@ -1,5 +1,4 @@
 require File.expand_path("./base_adapter", File.dirname(__FILE__))
-require "data_mapper"
 
 module SqlPartitioner
 

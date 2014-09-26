@@ -4,7 +4,8 @@ require 'logger'
 
 #require 'ruby-debug' # enable debugger support
 
-require 'active_record'
+#require 'active_record'
+require 'data_mapper'
 
 # enable both should and expect syntax in rspec without deprecation warnings
 RSpec.configure do |config|
@@ -19,14 +20,20 @@ RSpec.configure do |config|
     require 'yaml'
     db_conf = YAML.load_file('spec/db_conf.yml')
 
+    # establish both ActiveRecord and DataMapper connections
     ActiveRecord::Base.establish_connection(db_conf["test"])
+
+    adapter,database,user,pass,host = db_conf["test"].values_at *%W(adapter database username password host)
+    connection_string = "#{adapter}://#{user}:#{pass}@#{host}/#{database}"
+    puts "DB connection string: #{connection_string}"
+    DataMapper.setup(:default, connection_string)
   end
 
   config.before :each do
     sql = <<-SQL
       DROP TABLE IF EXISTS `events`
     SQL
-    ActiveRecord::Base.connection.execute(sql)
+    DataMapper.repository.adapter.execute(sql)
 
     sql = <<-SQL
       CREATE TABLE IF NOT EXISTS `events` (
@@ -35,7 +42,7 @@ RSpec.configure do |config|
         PRIMARY KEY (`id`,`timestamp`)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8
     SQL
-    ActiveRecord::Base.connection.execute(sql)
+    DataMapper.repository.adapter.execute(sql)
 
   end
 end
