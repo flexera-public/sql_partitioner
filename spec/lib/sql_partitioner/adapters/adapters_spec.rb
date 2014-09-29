@@ -21,10 +21,10 @@ shared_examples_for "an adapter" do
           result.should be_a_kind_of(Array)
 
           result.first.should be_a_kind_of(Struct)
-          result.first.timestamp.should == "1"
+          result.first.timestamp.to_i.should == 1
 
           result.last.should be_a_kind_of(Struct)
-          result.last.timestamp.should  == "2"
+          result.last.timestamp.to_i.should  == 2
         end
       end
     end
@@ -38,8 +38,8 @@ shared_examples_for "an adapter" do
 
         result.should be_a_kind_of(Array)
 
-        result.first.should == "1"
-        result.last.should  == "2"
+        result.first.to_i.should == 1
+        result.last.to_i.should  == 2
       end
       it "should return an array even when only one row is selected" do
         result = adapter.select("SELECT timestamp FROM events LIMIT 1")
@@ -57,3 +57,12 @@ describe SqlPartitioner::ARAdapter do
     end
   end
 end
+
+describe SqlPartitioner::DMAdapter do
+  it_should_behave_like "an adapter" do
+    let(:adapter) do
+      SqlPartitioner::DMAdapter.new(DataMapper.repository.adapter)
+    end
+  end
+end
+

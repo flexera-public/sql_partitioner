@@ -7,7 +7,7 @@ Gem::Specification.new do |gem|
   gem.name             = "sql_partitioner"
   gem.version          = SqlPartitioner::VERSION
 
-  gem.authors          = ['Jim Slattery, Dominic Metzger, Sumner McCarty, Prakash Selvaraj']
+  gem.authors          = ['Dominic Metzger, Sumner McCarty, Prakash Selvaraj, Jim Slattery']
   gem.date             = "2014-09-17"
 
   gem.summary          = %q{SQL Partitioning.}
@@ -23,6 +23,7 @@ Gem::Specification.new do |gem|
   gem.extra_rdoc_files = [ "LICENSE", "README.md" ]
   gem.rubygems_version = "1.8.26"
 
+
   # ---------------------------------------------------------------------
   # Test suite
   # ---------------------------------------------------------------------
@@ -37,6 +38,16 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency("mysql", "2.8.1")
   gem.add_development_dependency("activerecord", '2.3.9')
 #  gem.add_development_dependency("activesupport")
+
+  #-- DataMapper --------------------------------------------------------
+  do_gems_version   = "0.10.7"
+  dm_gems_version   = "1.2.0"
+
+  gem.add_development_dependency("data_objects", do_gems_version)
+  gem.add_development_dependency("do_mysql",     do_gems_version)
+
+  gem.add_development_dependency('data_mapper',       dm_gems_version)
+  gem.add_development_dependency('dm-mysql-adapter',  dm_gems_version)
 
 
 #  gem.add_development_dependency('ruby-debug',   '0.10.4')
