@@ -16,7 +16,7 @@ RSpec.configure do |config|
     c.syntax = [:should, :expect]
   end
 
-  config.before :all do
+  config.before :suite do
     require 'yaml'
     db_conf = YAML.load_file('spec/db_conf.yml')
 
