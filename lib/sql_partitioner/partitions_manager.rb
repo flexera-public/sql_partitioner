@@ -49,16 +49,16 @@ module SqlPartitioner
       end
 
       # ensure partitions created at interval from latest thru target
-      current_timestamp_date_time = @tum.from_time_unit_to_date_time(current_timestamp)
-      date_time_to_be_covered     = TimeUnitManager.advance_date_time(current_timestamp_date_time, :days, days_into_future)
+      current_timestamp_date_time = @tuc.to_date_time(current_timestamp)
+      date_time_to_be_covered     = TimeUnitConverter.advance_date_time(current_timestamp_date_time, :days, days_into_future)
 
-      latest_part_date_time = @tum.from_time_unit_to_date_time(partition_start_timestamp)
+      latest_part_date_time = @tuc.to_date_time(partition_start_timestamp)
       new_partition_data    = {}
 
       while latest_part_date_time < date_time_to_be_covered
-        latest_part_date_time = TimeUnitManager.advance_date_time(latest_part_date_time, partition_size_unit, partition_size)
+        latest_part_date_time = TimeUnitConverter.advance_date_time(latest_part_date_time, partition_size_unit, partition_size)
 
-        new_partition_ts   = @tum.to_time_unit(latest_part_date_time.strftime('%s').to_i)
+        new_partition_ts   = @tuc.from_seconds(latest_part_date_time.strftime('%s').to_i)
         new_partition_name = name_from_timestamp(new_partition_ts)
         new_partition_data[new_partition_name] = new_partition_ts
       end
@@ -85,7 +85,7 @@ module SqlPartitioner
 
       if new_partition_data.empty?
         msg = <<-MSG
-          Append: No-Op - Latest Partition Time of #{latest_partition.timestamp}, i.e. #{Time.at(@tum.from_time_unit(latest_partition.timestamp))} covers >= #{days_into_future} days_into_future
+          Append: No-Op - Latest Partition Time of #{latest_partition.timestamp}, i.e. #{Time.at(@tuc.to_seconds(latest_partition.timestamp))} covers >= #{days_into_future} days_into_future
         MSG
       else
         msg = <<-MSG
@@ -101,7 +101,7 @@ module SqlPartitioner
     # @param [Fixnum] days_from_now
     # @param [Boolean] dry_run, Defaults to false. If true, query wont be executed.
     def drop_partitions_older_than_in_days(days_from_now, dry_run = false)
-      timestamp = self.current_timestamp - @tum.days_to_time_unit(days_from_now)
+      timestamp = self.current_timestamp - @tuc.from_days(days_from_now)
       drop_partitions_older_than(timestamp, dry_run)
     end
 
@@ -114,7 +114,7 @@ module SqlPartitioner
 
       if partitions.blank?
         msg = <<-MSG
-          Drop: No-Op - No partitions older than #{timestamp}, i.e. #{Time.at(@tum.from_time_unit(timestamp))} to drop
+          Drop: No-Op - No partitions older than #{timestamp}, i.e. #{Time.at(@tuc.to_seconds(timestamp))} to drop
         MSG
       else
         partition_names = partitions.map(&:name)

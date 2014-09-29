@@ -9,9 +9,9 @@ module SqlPartitioner
 
     def initialize(options = {})
       @adapter            = options[:adapter]
-      @tum                = TimeUnitManager.new(options[:time_unit] || :seconds)
+      @tuc                = TimeUnitConverter.new(options[:time_unit] || :seconds)
 
-      @current_timestamp  = @tum.to_time_unit((options[:current_time] || Time.now).to_i)
+      @current_timestamp  = @tuc.from_seconds((options[:current_time] || Time.now).to_i)
       @table_name         = options[:table_name]
       @logger             = options[:logger]
       @lock_wait_timeout  = options[:lock_wait_timeout]
@@ -167,7 +167,7 @@ module SqlPartitioner
       if timestamp == FUTURE_PARTITION_VALUE
          FUTURE_PARTITION_NAME
       else
-        seconds = @tum.from_time_unit(timestamp)
+        seconds = @tuc.to_seconds(timestamp)
         "until_#{Time.at(seconds).utc.strftime("%Y_%m_%d")}"
       end
     end

@@ -1,58 +1,70 @@
 module SqlPartitioner
-  class TimeUnitManager
+  class TimeUnitConverter
     require 'date'
+
+    MINUTE_AS_SECONDS = 60
+    HOUR_AS_SECONDS   = 60 * MINUTE_AS_SECONDS
+    DAY_AS_SECONDS    = 24 * HOUR_AS_SECONDS
 
     SUPPORTED_TIME_UNITS = [:seconds, :micro_seconds]
 
+    # @param [Symbol] time_unit one of SUPPORTED_TIME_UNITS
     def initialize(time_unit)
       raise ArgumentError.new("Invalid time unit #{time_unit} passed") if !SUPPORTED_TIME_UNITS.include?(time_unit)
 
       @time_unit = time_unit
     end
 
-    def self.days_in_seconds(num_days)
-      60 * 60 * 24 * num_days
+    # @return [Fixnum] number of days represented in the configure time units
+    def from_days(num_days)
+      from_seconds(num_days * DAY_AS_SECONDS)
     end
 
-    def days_to_time_unit(num_days)
-      to_time_unit(TimeUnitManager.days_in_seconds(num_days))
-    end
-
-    def from_time_unit_to_date_time(timestamp)
-      seconds_since_unix_epoch = self.from_time_unit(timestamp)
-      DateTime.strptime("#{seconds_since_unix_epoch}", '%s')
+    # @param [Fixnum] time_units_timestamp timestamp in configured time units
+    # @return [DateTime] representation of the given timestamp
+    def to_date_time(time_units_timestamp)
+      DateTime.strptime("#{to_seconds(time_units_timestamp)}", '%s')
     end
 
     # converts from seconds to the configured time unit
     #
-    # @param [Fixnum] timestamp timestamp in seconds
+    # @param [Fixnum] timestamp_seconds timestamp in seconds
     #
     # @return [Fixnum] timestamp in configured time units
-    def to_time_unit(timestamp)
-      timestamp * time_unit_multiplier
+    def from_seconds(timestamp_seconds)
+      timestamp_seconds * time_units_per_second
     end
 
     # converts from the configured time unit to seconds
     #
-    # @param [Fixnum] timestamp timestamp in the configured timeout units
+    # @param [Fixnum] time_units_timestamp timestamp in the configured time units
     #
     # @return [Fixnum] timestamp in seconds
-    def from_time_unit(timestamp)
-      timestamp / time_unit_multiplier
+    def to_seconds(time_units_timestamp)
+      time_units_timestamp / time_units_per_second
     end
 
-    def time_unit_multiplier
-      self.class.time_unit_multiplier(@time_unit)
+    def time_units_per_second
+      self.class.time_units_per_second(@time_unit)
     end
 
-    def advance(timestamp, time_unit_to_advance, value)
-      date_time = from_time_unit_to_date_time(timestamp)
-      date_time = self.class.advance_date_time(date_time, time_unit_to_advance, value)
-      to_time_unit(date_time.to_time.to_i)
+    # @param [Fixnum] time_units_timestamp
+    # @param [Symbol] calendar_unit unit for the given value, one of [:day(s), :month(s)]
+    # @param [Fixnum] value in terms of calendar_unit to add to the time_units_timestamp
+    #
+    # @return [Fixnum] new timestamp in configured time units
+    def advance(time_units_timestamp, calendar_unit, value)
+      date_time = to_date_time(time_units_timestamp)
+      date_time = self.class.advance_date_time(date_time, calendar_unit, value)
+      from_seconds(date_time.to_time.to_i)
     end
 
-    def self.advance_date_time(date_time, time_unit, value)
-      new_time = case time_unit
+    # @param [DateTime] date_time
+    # @param [Symbol] calendar_unit unit for the given value, one of [:day(s), :month(s)]
+    # @param [Fixnum] value in terms of calendar_unit to add to the date_time
+    # @return [DateTime] result of advancing the given date_time by the given value
+    def self.advance_date_time(date_time, calendar_unit, value)
+      new_time = case calendar_unit
         when :days, :day
           date_time + value
         when :months, :month
@@ -62,11 +74,9 @@ module SqlPartitioner
       new_time
     end
 
-    # translates time_unit to a second multiplier to get the requested
-    # time unit
-    #
-    # @return [Fixnum] multiplier
-    def self.time_unit_multiplier(time_unit)
+    # @param [Symbol] time_unit one of SUPPORTED_TIME_UNITS
+    # @return [Fixnum] how many of the given time_unit are in 1 second
+    def self.time_units_per_second(time_unit)
       if time_unit == :micro_seconds
         multiplier = 1_000_000
       else
