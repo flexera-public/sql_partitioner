@@ -1,5 +1,149 @@
 require File.expand_path("../spec_helper", File.dirname(__FILE__))
 
+describe "BasePartitionsManager with ARAdapter" do
+  describe "#initialize_partitioning" do
+    before(:each) do
+      @ar_adapter = SqlPartitioner::ARAdapter.new(ActiveRecord::Base.connection)
+
+      @partition_manager = SqlPartitioner::BasePartitionsManager.new(
+        :adapter      => @ar_adapter,
+        :current_time => Time.utc(2014,04,18),
+        :table_name   => 'test_events',
+        :logger       => Logger.new(STDOUT)
+      )
+    end
+
+    context "with some partitions passed" do
+      it "should create the future partition and the partition specified" do
+        @partition_manager.initialize_partitioning({'until_2014_03_17' => 1395014400})
+        SqlPartitioner::Partition.all(@ar_adapter, 'test_events').map{|p| [p.name, p.timestamp]}.should == [
+          ["until_2014_03_17", 1395014400],
+          ["future", "MAXVALUE"]
+        ]
+      end
+    end
+
+    context "with no partition passed" do
+      it "should create the future partition" do
+        @partition_manager.initialize_partitioning({})
+        SqlPartitioner::Partition.all(@ar_adapter, 'test_events').map{|p| [p.name, p.timestamp]}.should == [
+          ["future", "MAXVALUE"]
+        ]
+      end
+    end
+  end
+
+  describe "#drop_partitions" do
+    before(:each) do
+      @ar_adapter = SqlPartitioner::ARAdapter.new(ActiveRecord::Base.connection)
+
+      @partition_manager = SqlPartitioner::BasePartitionsManager.new(
+        :adapter      => @ar_adapter,
+        :current_time => Time.utc(2014,04,16),
+        :table_name   => 'test_events',
+        :logger       => Logger.new(STDOUT)
+      )
+
+      @partitions = {'until_2014_03_17' => 1395014400, 'until_2014_04_17' => 1397692800}
+      @partition_manager.initialize_partitioning(@partitions)
+    end
+
+    context "with an attempt to drop a regular partition" do
+      before(:each) do
+        @partition_to_drop = {'until_2014_03_17' => 1395014400}
+      end
+      it "should drop the partition specified" do
+        @partition_manager.drop_partitions(@partition_to_drop.keys)
+        SqlPartitioner::Partition.all(@ar_adapter, 'test_events').map{|p| [p.name, p.timestamp]}.should == [
+          ['until_2014_04_17', 1397692800],
+          ["future", "MAXVALUE"]
+        ]
+      end
+    end
+    context "with an attempt to drop the current partition" do
+      before(:each) do
+        @partition_to_drop = {'until_2014_04_17' => 1397692800}
+      end
+      it "should fail to drop the current partition" do
+        lambda do
+          @partition_manager.drop_partitions(@partition_to_drop.keys)
+        end.should raise_error(ArgumentError)
+      end
+    end
+    context "with an attempt to drop the future partition" do
+      before(:each) do
+        @partition_to_drop = {SqlPartitioner::Partition::FUTURE_PARTITION_NAME => SqlPartitioner::Partition::FUTURE_PARTITION_NAME}
+      end
+      it "should fail to drop the future partition" do
+        lambda do
+          @partition_manager.drop_partitions(@partition_to_drop.keys)
+        end.should raise_error(ArgumentError)
+      end
+    end
+    context "with an attempt to drop a non-existing partition" do
+      before(:each) do
+        @partition_to_drop = {'until_2014_02_17' => 1392595200}
+      end
+      it "should fail to drop the future partition" do
+        lambda do
+          @partition_manager.drop_partitions(@partition_to_drop.keys)
+        end.should raise_error(ActiveRecord::StatementInvalid)
+      end
+    end
+  end
+
+  describe "#reorg_future_partition" do
+    before(:each) do
+      @ar_adapter = SqlPartitioner::ARAdapter.new(ActiveRecord::Base.connection)
+
+      @partition_manager = SqlPartitioner::BasePartitionsManager.new(
+        :adapter      => @ar_adapter,
+        :current_time => Time.utc(2014,04,16),
+        :table_name   => 'test_events',
+        :logger       => Logger.new(STDOUT)
+      )
+
+      @partitions = {'until_2014_03_17' => 1395014400, 'until_2014_04_17' => 1397692800}
+      @partition_manager.initialize_partitioning(@partitions)
+    end
+
+    context "with reorganizing the future partition into a partition with timestamp < existing partititon" do
+      before(:each) do
+        @partition_to_reorg = {'until_2014_02_17' => 1392595200}
+      end
+      it "should fail to reorganize the future partition" do
+        lambda do
+          @partition_manager.reorg_future_partition(@partition_to_reorg)
+        end.should raise_error(ActiveRecord::StatementInvalid)
+      end
+    end
+    context "with reorganizing the future partition into one new partition with timestamp == existing partititon" do
+      before(:each) do
+        @partition_to_reorg = {'until_2014_04_17' => 1397692800}
+      end
+      it "should fail to reorganize the future partition" do
+        lambda do
+          @partition_manager.reorg_future_partition(@partition_to_reorg)
+        end.should raise_error(ActiveRecord::StatementInvalid)
+      end
+    end
+    context "with reorganizing the future partition into one new partition with timestamp > existing partititon" do
+      before(:each) do
+        @partition_to_reorg = {'until_2014_05_17' => 1400284800}
+      end
+      it "should succeed in reorganizing the future partition" do
+        @partition_manager.reorg_future_partition(@partition_to_reorg)
+        SqlPartitioner::Partition.all(@ar_adapter, 'test_events').map{|p| [p.name, p.timestamp]}.should == [
+          ['until_2014_03_17', 1395014400],
+          ['until_2014_04_17', 1397692800],
+          ['until_2014_05_17', 1400284800],
+          ["future",           "MAXVALUE"]
+        ]
+      end
+    end
+  end
+end
+
 describe "BasePartitionsManager" do
   before(:each) do
     @adapter = Struct.new(:schema_name).new("sql_partitioner_test")
@@ -7,7 +151,7 @@ describe "BasePartitionsManager" do
     @partition_manager = SqlPartitioner::BasePartitionsManager.new(
       :adapter      => @adapter,
       :current_time => Time.utc(2014,04,18),
-      :table_name   => 'events',
+      :table_name   => 'test_events',
       :logger       => Logger.new(STDOUT)
     )
   end

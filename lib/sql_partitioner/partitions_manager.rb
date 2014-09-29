@@ -110,7 +110,7 @@ module SqlPartitioner
     #                           dropped
     # @param [Boolean] dry_run, Defaults to false. If true, query wont be executed.
     def drop_partitions_older_than(timestamp, dry_run = false)
-      partitions = Partition.all(adapter, table_name).older_than_timestamp(timestamp).compact
+      partitions = Partition.all(adapter, table_name).older_than_timestamp(timestamp)
 
       if partitions.blank?
         msg = <<-MSG

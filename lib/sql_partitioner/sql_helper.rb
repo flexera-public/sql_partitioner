@@ -1,5 +1,6 @@
 module SqlPartitioner
   class SQL
+
     def self.partition_info
       SqlPartitioner::SQL.compress_lines(<<-SQL)
         SELECT  *
@@ -11,6 +12,7 @@ module SqlPartitioner
 
     def self.drop_partitions(table_name, partition_names)
       return nil if partition_names.empty?
+
       SqlPartitioner::SQL.compress_lines(<<-SQL)
         ALTER TABLE #{table_name}
         DROP PARTITION #{partition_names.join(',')}
@@ -26,19 +28,32 @@ module SqlPartitioner
       SQL
     end
 
-    def self.reorg_partitions(table_name,
-                              new_partition_data,
-                              reorg_partition_name)
+    def self.reorg_partitions(table_name, new_partition_data, reorg_partition_name)
       return nil if new_partition_data.empty?
+
       partition_suq_query = sort_partition_data(new_partition_data).map do |partition_name, until_timestamp|
         "PARTITION #{partition_name} VALUES LESS THAN (#{until_timestamp})"
       end.join(',')
+
       SqlPartitioner::SQL.compress_lines(<<-SQL)
         ALTER TABLE #{table_name}
         REORGANIZE PARTITION #{reorg_partition_name} INTO
         (#{partition_suq_query})
       SQL
     end
+
+    def self.initialize_partitioning(table_name, partition_data)
+      partition_sub_query = sort_partition_data(partition_data).map do |partition_name, until_timestamp|
+        "PARTITION #{partition_name} VALUES LESS THAN (#{until_timestamp})"
+      end.join(',')
+
+      SqlPartitioner::SQL.compress_lines(<<-SQL)
+        ALTER TABLE #{table_name}
+        PARTITION BY RANGE(timestamp)
+        (#{partition_sub_query})
+      SQL
+    end
+
 
     def self.sort_partition_data(partition_data)
       puts partition_data.inspect
@@ -52,19 +67,6 @@ module SqlPartitioner
         end
       end
     end
-
-
-    def self.initialize_partitioning(table_name, partition_data)
-      partition_sub_query = sort_partition_data(partition_data).map do |partition_name, until_timestamp|
-        "PARTITION #{partition_name} VALUES LESS THAN (#{until_timestamp})"
-      end.join(',')
-      SqlPartitioner::SQL.compress_lines(<<-SQL)
-        ALTER TABLE #{table_name}
-        PARTITION BY RANGE(timestamp)
-        (#{partition_sub_query})
-      SQL
-    end
-
 
     # Replace sequences of whitespace (including newlines) with either
     # a single space or remove them entirely (according to param _spaced_).
