@@ -5,11 +5,11 @@ require 'sql_partitioner/sql_helper'
 require 'sql_partitioner/base_partitions_manager'
 require 'sql_partitioner/partitions_manager'
 
-def self.require_or_skip(path, category)  
-  begin
+def self.require_or_skip(path, required_constant)
+  if Object.const_defined?(required_constant)
     require path
-  rescue LoadError => e
-    puts "{sql_partitioner} SKIPPING #{category} functionality due to #{e.message}"  
+  else
+    puts "{sql_partitioner} SKIPPING `require '#{path}'` because #{required_constant} is not defined."
   end
 end
 
