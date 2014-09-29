@@ -107,9 +107,8 @@ module SqlPartitioner
     #   {'until_2014_03_17' => 1395077901193149
     #    'until_2014_04_01' => 1396373901193398}
     #
-    # @param [Hash] partition data
-    # @param [Boolean] dry run, default value is false. Query wont be executed
-    #                  if dry_run is set to true
+    # @param [Hash] partition_data
+    # @param [Boolean] dry_run, Defaults to false. If true, query wont be executed.
     # @raise [ArgumentError] if partition data is not hash or if one of name id
     #                    is not a String or if one of the value is not
     #                    Integer
@@ -123,9 +122,8 @@ module SqlPartitioner
     end
 
     # Drop partitions by name
-    # @param [Array] array of partition_names in String
-    # @param [Boolean] dry run, default value is false. Query wont be executed
-    #                  if dry_run is set to true
+    # @param [Array] partition_names array of partition_names in String
+    # @param [Boolean] dry_run Defaults to false. If true, query wont be executed.
     # @return [String] drop sql if dry run is true
     # @raise [ArgumentError] if input is not an Array or if partition name is
     #                        not a string
@@ -139,7 +137,7 @@ module SqlPartitioner
     # Reorgs future partition into partitions provided as input.
     #
     # @param [Hash] partition_data of form { partition_name1 => timestamp1..}
-    # @param [Boolean] dry_run Query wont be executed if dry run is true
+    # @param [Boolean] dry_run Defaults to false. If true, query wont be executed.
     # @return [Boolean] true if not dry run and query is executed else false
     # @return [String] sql if dry_run is true
     def reorg_future_partition(partition_data, dry_run = false)
@@ -201,7 +199,8 @@ module SqlPartitioner
 
     # executes the sql and then displays the partition info
     # @param [String] sql to be executed
-    # @return [Boolean] true
+    # @param [Boolean] dry_run Defaults to true. If true, query wont be executed.
+    # @return [String/Boolean] returns SQL to be executed if dry_run=true
     def _execute_and_display_partition_info(sql, dry_run=true)
       if sql
         if dry_run
