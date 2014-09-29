@@ -8,7 +8,7 @@ describe "BasePartitionsManager with ARAdapter" do
       @partition_manager = SqlPartitioner::BasePartitionsManager.new(
         :adapter      => @ar_adapter,
         :current_time => Time.utc(2014,04,18),
-        :table_name   => 'events',
+        :table_name   => 'test_events',
         :logger       => Logger.new(STDOUT)
       )
     end
@@ -16,7 +16,7 @@ describe "BasePartitionsManager with ARAdapter" do
     context "with some partitions passed" do
       it "should create the future partition and the partition specified" do
         @partition_manager.initialize_partitioning({'until_2014_03_17' => 1395014400})
-        SqlPartitioner::Partition.all(@ar_adapter, 'events').map{|p| [p.name, p.timestamp]}.should == [
+        SqlPartitioner::Partition.all(@ar_adapter, 'test_events').map{|p| [p.name, p.timestamp]}.should == [
           ["until_2014_03_17", 1395014400],
           ["future", "MAXVALUE"]
         ]
@@ -26,7 +26,7 @@ describe "BasePartitionsManager with ARAdapter" do
     context "with no partition passed" do
       it "should create the future partition" do
         @partition_manager.initialize_partitioning({})
-        SqlPartitioner::Partition.all(@ar_adapter, 'events').map{|p| [p.name, p.timestamp]}.should == [
+        SqlPartitioner::Partition.all(@ar_adapter, 'test_events').map{|p| [p.name, p.timestamp]}.should == [
           ["future", "MAXVALUE"]
         ]
       end
@@ -40,7 +40,7 @@ describe "BasePartitionsManager with ARAdapter" do
       @partition_manager = SqlPartitioner::BasePartitionsManager.new(
         :adapter      => @ar_adapter,
         :current_time => Time.utc(2014,04,16),
-        :table_name   => 'events',
+        :table_name   => 'test_events',
         :logger       => Logger.new(STDOUT)
       )
 
@@ -54,7 +54,7 @@ describe "BasePartitionsManager with ARAdapter" do
       end
       it "should drop the partition specified" do
         @partition_manager.drop_partitions(@partition_to_drop.keys)
-        SqlPartitioner::Partition.all(@ar_adapter, 'events').map{|p| [p.name, p.timestamp]}.should == [
+        SqlPartitioner::Partition.all(@ar_adapter, 'test_events').map{|p| [p.name, p.timestamp]}.should == [
           ['until_2014_04_17', 1397692800],
           ["future", "MAXVALUE"]
         ]
@@ -99,7 +99,7 @@ describe "BasePartitionsManager with ARAdapter" do
       @partition_manager = SqlPartitioner::BasePartitionsManager.new(
         :adapter      => @ar_adapter,
         :current_time => Time.utc(2014,04,16),
-        :table_name   => 'events',
+        :table_name   => 'test_events',
         :logger       => Logger.new(STDOUT)
       )
 
@@ -133,7 +133,7 @@ describe "BasePartitionsManager with ARAdapter" do
       end
       it "should succeed in reorganizing the future partition" do
         @partition_manager.reorg_future_partition(@partition_to_reorg)
-        SqlPartitioner::Partition.all(@ar_adapter, 'events').map{|p| [p.name, p.timestamp]}.should == [
+        SqlPartitioner::Partition.all(@ar_adapter, 'test_events').map{|p| [p.name, p.timestamp]}.should == [
           ['until_2014_03_17', 1395014400],
           ['until_2014_04_17', 1397692800],
           ['until_2014_05_17', 1400284800],
@@ -151,7 +151,7 @@ describe "BasePartitionsManager" do
     @partition_manager = SqlPartitioner::BasePartitionsManager.new(
       :adapter      => @adapter,
       :current_time => Time.utc(2014,04,18),
-      :table_name   => 'events',
+      :table_name   => 'test_events',
       :logger       => Logger.new(STDOUT)
     )
   end

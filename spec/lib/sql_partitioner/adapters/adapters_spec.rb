@@ -7,16 +7,16 @@ shared_examples_for "an adapter" do
     context "with multiple columns selected" do
       context "and no data returned" do
         it "should return an empty hash" do
-          adapter.select("SELECT * FROM EVENTS").should == []
+          adapter.select("SELECT * FROM test_events").should == []
         end
       end
       context "and data returned" do
         before(:each) do
-          adapter.execute("INSERT INTO events(timestamp) VALUES(1)")
-          adapter.execute("INSERT INTO events(timestamp) VALUES(2)")
+          adapter.execute("INSERT INTO test_events(timestamp) VALUES(1)")
+          adapter.execute("INSERT INTO test_events(timestamp) VALUES(2)")
         end
         it "should return a Struct with accessors for each column" do
-          result = adapter.select("SELECT * FROM events")
+          result = adapter.select("SELECT * FROM test_events")
 
           result.should be_a_kind_of(Array)
 
@@ -30,11 +30,11 @@ shared_examples_for "an adapter" do
     end
     context "with a single column selected" do
       before(:each) do
-        adapter.execute("INSERT INTO events(timestamp) VALUES(1)")
-        adapter.execute("INSERT INTO events(timestamp) VALUES(2)")
+        adapter.execute("INSERT INTO test_events(timestamp) VALUES(1)")
+        adapter.execute("INSERT INTO test_events(timestamp) VALUES(2)")
       end
       it "should return the values without Struct" do
-        result = adapter.select("SELECT timestamp FROM events")
+        result = adapter.select("SELECT timestamp FROM test_events")
 
         result.should be_a_kind_of(Array)
 
@@ -42,7 +42,7 @@ shared_examples_for "an adapter" do
         result.last.to_i.should  == 2
       end
       it "should return an array even when only one row is selected" do
-        result = adapter.select("SELECT timestamp FROM events LIMIT 1")
+        result = adapter.select("SELECT timestamp FROM test_events LIMIT 1")
 
         result.should be_a_kind_of(Array)
       end

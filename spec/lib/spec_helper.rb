@@ -31,12 +31,12 @@ RSpec.configure do |config|
 
   config.before :each do
     sql = <<-SQL
-      DROP TABLE IF EXISTS `events`
+      DROP TABLE IF EXISTS `test_events`
     SQL
     DataMapper.repository.adapter.execute(sql)
 
     sql = <<-SQL
-      CREATE TABLE IF NOT EXISTS `events` (
+      CREATE TABLE IF NOT EXISTS `test_events` (
         `id` bigint(20) NOT NULL AUTO_INCREMENT,
         `timestamp` bigint(20) unsigned NOT NULL DEFAULT '0',
         PRIMARY KEY (`id`,`timestamp`)

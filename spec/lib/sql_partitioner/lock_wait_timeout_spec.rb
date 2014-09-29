@@ -62,12 +62,12 @@ describe SqlPartitioner::LockWaitTimeoutHandler do
       end
       context "and the second db connection holding a lock" do
         it "should timeout quickly" do
-          @second_db_connection.execute("LOCK TABLE events WRITE")
+          @second_db_connection.execute("LOCK TABLE test_events WRITE")
 
           begin
             lambda do
               SqlPartitioner::LockWaitTimeoutHandler.with_lock_wait_timeout(@ar_adapter, @with_lock_wait_timeout) do
-                @first_db_connection.execute("LOCK TABLE events WRITE")
+                @first_db_connection.execute("LOCK TABLE test_events WRITE")
               end
             end.should raise_error(ActiveRecord::StatementInvalid, /Lock wait timeout exceeded/)
           ensure
