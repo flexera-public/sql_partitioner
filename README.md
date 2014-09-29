@@ -1,4 +1,6 @@
 # SqlPartitioner
+[![Build Status](https://travis-ci.org/rightscale/sql_partitioner.png)](https://travis-ci.org/rightscale/sql_partitioner)
+
 
 SQL Partitioner provides...
 
