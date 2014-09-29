@@ -29,15 +29,8 @@ Gem::Specification.new do |gem|
   # ---------------------------------------------------------------------
   gem.add_development_dependency("rspec",        '3.0.0')
 
-  # gem.add_development_dependency('activerecord-mysql2-adapter')
-  # gem.add_development_dependency("mysql2", '< 0.3')
-  # gem.add_development_dependency("activerecord")
-  # gem.add_development_dependency("activesupport", '3.2.9')
-
-#  gem.add_development_dependency('activerecord-mysql2-adapter')
   gem.add_development_dependency("mysql", "2.8.1")
   gem.add_development_dependency("activerecord", '2.3.9')
-#  gem.add_development_dependency("activesupport")
 
   #-- DataMapper --------------------------------------------------------
   do_gems_version   = "0.10.7"
