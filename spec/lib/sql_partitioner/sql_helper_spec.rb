@@ -5,13 +5,13 @@ describe "SqlHelper" do
     @table_name = 'my_table'
   end
   describe ".drop_partitions" do
-    it "should return nil when no partiton_names are passed" do
+    it "should return nil when no partition_names are passed" do
       SqlPartitioner::SQL.drop_partitions(@table_name, []).should == nil
     end
   end
 
   describe ".reorg_partitions" do
-    it "should return nil when no partiton_names are passed" do
+    it "should return nil when no partition_names are passed" do
       SqlPartitioner::SQL.reorg_partitions(@table_name, [], "future").should == nil
     end
   end

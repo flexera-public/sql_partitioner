@@ -51,6 +51,7 @@ module SqlPartitioner
       @partition_data = partition_data
     end
 
+    # @return [PartitionCollection]
     def self.all(adapter, table_name)
       select_sql = SqlPartitioner::SQL.partition_info
       result = adapter.select(select_sql, adapter.schema_name, table_name).reject{|r| r.partition_description.nil? }

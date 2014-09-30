@@ -79,7 +79,6 @@ describe "PartitionCollection" do
     end
 
     it "should not return the future partition" do
-      existing_partition_ts = SqlPartitioner::SQL.sort_partition_data(@partitions).first[1]
       SqlPartitioner::Partition.all(@ar_adapter, 'test_events').non_future_partitions.map{|p| [p.name, p.timestamp]}.should == [
         ['until_2014_03_17', 1395014400]
       ]
@@ -105,7 +104,6 @@ describe "PartitionCollection" do
       end
 
       it "should return the latest partition" do
-        existing_partition_ts = SqlPartitioner::SQL.sort_partition_data(@partitions).first[1]
         partition = SqlPartitioner::Partition.all(@ar_adapter, 'test_events').latest_partition
 
         partition.name.should      == 'until_2014_04_17'
@@ -143,7 +141,6 @@ describe "PartitionCollection" do
       end
 
       it "should the oldest partition" do
-        existing_partition_ts = SqlPartitioner::SQL.sort_partition_data(@partitions).last[1]
         partition = SqlPartitioner::Partition.all(@ar_adapter, 'test_events').oldest_partition
 
         partition.name.should      == 'until_2014_03_17'
@@ -178,8 +175,7 @@ describe "Partition" do
       end
 
       it "should return a PartitionCollection containing all the partitions" do
-        existing_partition_ts = SqlPartitioner::SQL.sort_partition_data(@partitions).last[1]
-        partition = SqlPartitioner::Partition.all(@ar_adapter, 'test_events').map{|p| [p.name, p.timestamp]}.should == [
+        SqlPartitioner::Partition.all(@ar_adapter, 'test_events').map{|p| [p.name, p.timestamp]}.should == [
           ['until_2014_03_17', 1395014400],
           ["future", "MAXVALUE"]
         ]
