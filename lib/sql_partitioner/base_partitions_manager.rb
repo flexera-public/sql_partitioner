@@ -147,6 +147,8 @@ module SqlPartitioner
     # @return [Boolean] true if not dry run and query is executed else false
     # @return [String] sql if dry_run is true
     def reorg_future_partition(partition_data, dry_run = false)
+      partition_data = partition_data.dup
+
       if partition_data.any?
         partition_data[FUTURE_PARTITION_NAME] = FUTURE_PARTITION_VALUE
       end
