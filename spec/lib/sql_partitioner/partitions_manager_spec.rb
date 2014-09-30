@@ -1,6 +1,6 @@
 require File.expand_path("../spec_helper", File.dirname(__FILE__))
 
-describe "BasePartitionsManager with ARAdapter" do
+describe "PartitionsManager with ARAdapter" do
   describe "#initialize_partitioning_in_intervals" do
     before(:each) do
       @ar_adapter = SqlPartitioner::ARAdapter.new(ActiveRecord::Base.connection)

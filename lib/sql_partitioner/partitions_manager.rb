@@ -106,6 +106,7 @@ module SqlPartitioner
     # @param [Fixnum] timestamp partitions older than this timestamp will be
     #                           dropped
     # @param [Boolean] dry_run, Defaults to false. If true, query wont be executed.
+    # @return [Array] an array of partition names that were dropped
     def drop_partitions_older_than(timestamp, dry_run = false)
       partitions = Partition.all(adapter, table_name).older_than_timestamp(timestamp)
       partition_names = partitions.map(&:name)
