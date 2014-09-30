@@ -12,65 +12,109 @@ describe "PartitionsManager" do
     )
   end
 
-  describe "#partitions_to_append" do
-    context "with latest partition being at same time as current_time" do
+  describe "#partitions_to_append_by_ts_range" do
+    context "with end_timestamp == partition_start_timestamp" do
       before(:each) do
-        @partition_start_timestamp = @partition_manager.current_timestamp
+        @start_ts = Time.utc(2014,01,01).to_i
+        @end_ts   = Time.utc(2014,01,01).to_i
       end
-      context "and we request to have 1 months in the future covered" do
-        it "should create 2 partitions" do
+      it "should create the number of partitions requested" do
+        months_to_cover = 1
+        expect(@partition_manager.partitions_to_append_by_ts_range(@start_ts, @end_ts, :months, months_to_cover)).to eq({})
+      end
+    end
+    context "with end_timestamp - partition_start_timestamp < partition_size_unit * partition_size" do
+      before(:each) do
+        @start_ts = Time.utc(2014,01,01).to_i
+        @end_ts   = Time.utc(2014,01,02).to_i
+      end
+      it "should create the number of partitions requested" do
+        months_to_cover = 1
+        expect(@partition_manager.partitions_to_append_by_ts_range(@start_ts, @end_ts, :months, months_to_cover)).to eq({
+            "until_2014_02_01"=>Time.utc(2014,02,01).to_i
+          }
+        )
+      end
+    end
+    context "with end_timestamp - partition_start_timestamp == partition_size_unit * partition_size" do
+      before(:each) do
+        @start_ts = Time.utc(2014,01,01).to_i
+        @end_ts   = Time.utc(2014,02,01).to_i
+      end
+      it "should create the number of partitions requested" do
+        months_to_cover = 1
+        expect(@partition_manager.partitions_to_append_by_ts_range(@start_ts, @end_ts, :months, months_to_cover)).to eq({
+            "until_2014_02_01"=>Time.utc(2014,02,01).to_i
+          }
+        )
+      end
+    end
+    context "with end_timestamp - partition_start_timestamp > partition_size_unit * partition_size" do
+      before(:each) do
+        @start_ts = Time.utc(2014,01,01).to_i
+        @end_ts   = Time.utc(2014,03,01).to_i
+      end
+      context "with one months partition size" do
+        it "should create one partition two months in the future from start_ts" do
           months_to_cover = 1
-          expect(@partition_manager.partitions_to_append(@partition_start_timestamp, :months, 1, months_to_cover)).to eq({
-              "until_2014_02_01"=>Time.utc(2014,02,01).to_i
+          expect(@partition_manager.partitions_to_append_by_ts_range(@start_ts, @end_ts, :months, months_to_cover)).to eq({
+              "until_2014_02_01"=>Time.utc(2014,02,01).to_i,
+              "until_2014_03_01"=>Time.utc(2014,03,01).to_i
+            }
+          )
+        end
+      end
+      context "with two months partition size" do
+        it "should create one partition two months in the future from start_ts" do
+          months_to_cover = 2
+          expect(@partition_manager.partitions_to_append_by_ts_range(@start_ts, @end_ts, :months, months_to_cover)).to eq({
+              "until_2014_03_01"=>Time.utc(2014,03,01).to_i
+            }
+          )
+        end
+      end
+      context "with 10 day partition size" do
+        it "should create one partition two months in the future from start_ts" do
+          days_to_cover = 20
+          expect(@partition_manager.partitions_to_append_by_ts_range(@start_ts, @end_ts, :days, days_to_cover)).to eq({
+              "until_2014_01_21" => Time.utc(2014,01,21).to_i,
+              "until_2014_02_10" => Time.utc(2014,02,10).to_i,
+              "until_2014_03_02" => Time.utc(2014,03,02).to_i
             }
           )
         end
       end
     end
-    context "with latest partition being 1 month in the past" do
+    context "with end_timestamp < partition_start_timestamp" do
       before(:each) do
-        @partition_start_timestamp = Time.utc(2013,12,01).to_i
+        @start_ts = Time.utc(2014,02,01).to_i
+        @end_ts   = Time.utc(2014,01,01).to_i
       end
-      context "and we request to have 1 months in the future covered" do
-        it "should create 2 partitions" do
-          days_to_cover = 30
-          expect(@partition_manager.partitions_to_append(@partition_start_timestamp, :months, 1, days_to_cover)).to eq({
-              "until_2014_01_01"=>Time.utc(2014,01,01).to_i,
-              "until_2014_02_01"=>Time.utc(2014,02,01).to_i
-            }
-          )
-        end
+      it "should create the number of partitions requested" do
+        months_to_cover = 1
+        expect(@partition_manager.partitions_to_append_by_ts_range(@start_ts, @end_ts, :months, months_to_cover)).to eq({})
       end
     end
-    context "with latest partition covering 30 days in the future" do
-      before(:each) do
-        @partition_start_timestamp = Time.utc(2014,02,01).to_i
+    context "with invalid parameters" do
+      it "should raise an Argument error with a start_ts < 0" do
+        lambda do
+          expect(@partition_manager.partitions_to_append_by_ts_range(start_ts = -1, end_ts = 1, :months, 1)).to eq({})
+        end.should raise_error(ArgumentError, /should be > 0/)
       end
-      context "and we request to have 1 months in the future covered" do
-        it "should create no extra partition" do
-          days_to_cover = 30
-          expect(@partition_manager.partitions_to_append(@partition_start_timestamp, :months, 1, days_to_cover)).to eq({})
-        end
+      it "should raise an Argument error with a end_ts < 0" do
+        lambda do
+          expect(@partition_manager.partitions_to_append_by_ts_range(start_ts = 1, end_ts = -1, :months, 1)).to eq({})
+        end.should raise_error(ArgumentError, /should be > 0/)
       end
-      context "and we request to have 60 days in the future covered" do
-        it "should create 2 extra partitions, due to the shortness of feburary requireng 2 partitions to cover 60 days" do
-          days_to_cover = 60
-          expect(@partition_manager.partitions_to_append(@partition_start_timestamp, :months, 1, days_to_cover)).to eq({
-            "until_2014_03_01"=>Time.utc(2014,03,01).to_i,
-            "until_2014_04_01"=>Time.utc(2014,04,01).to_i
-            }
-          )
-        end
+      it "should raise an Argument error with an invalid partition_size_unit" do
+        lambda do
+          expect(@partition_manager.partitions_to_append_by_ts_range(start_ts = 1, end_ts = 1, :potatoes, 1)).to eq({})
+        end.should raise_error(ArgumentError, /partition_size_unit must be one of/)
       end
-      context "and we request to have 90 days in the future covered" do
-        it "should create 2 extra partitions" do
-          days_to_cover = 90
-          expect(@partition_manager.partitions_to_append(@partition_start_timestamp, :months, 1, days_to_cover)).to eq({
-              "until_2014_03_01"=>Time.utc(2014,03,01).to_i,
-              "until_2014_04_01"=>Time.utc(2014,04,01).to_i
-            }
-          )
-        end
+      it "should raise an Argument error with an invalid partition_size" do
+        lambda do
+          expect(@partition_manager.partitions_to_append_by_ts_range(start_ts = 1, end_ts = 1, :months, -1)).to eq({})
+        end.should raise_error(ArgumentError, /should be > 0/)
       end
     end
   end

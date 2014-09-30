@@ -30,8 +30,8 @@ module SqlPartitioner
     def partitions_to_append(partition_start_timestamp, partition_size_unit, partition_size, days_into_future)
       _validate_positive_fixnum(:days_into_future, days_into_future)
 
-      end_timestamp  = @tum.advance(current_timestamp, :days, days_into_future)
-      partitions_to_append_by_date_range(partition_start_timestamp, end_timestamp, partition_size_unit, partition_size)
+      end_timestamp = @tum.advance(current_timestamp, :days, days_into_future)
+      partitions_to_append_by_ts_range(partition_start_timestamp, end_timestamp, partition_size_unit, partition_size)
     end
 
     # Get partition_data hash based on the last partition's timestamp and covering end_timestamp
@@ -42,11 +42,13 @@ module SqlPartitioner
     # @param [Fixnum] partition_size, intervals covered by the new partition
     #
     # @return [Hash] partition_data hash
-    def partitions_to_append_by_date_range(partition_start_timestamp, end_timestamp, partition_size_unit, partition_size)
+    def partitions_to_append_by_ts_range(partition_start_timestamp, end_timestamp, partition_size_unit, partition_size)
       if partition_size_unit.nil? || !VALID_PARTITION_SIZE_UNITS.include?(partition_size_unit)
         _raise_arg_err "partition_size_unit must be one of: #{VALID_PARTITION_SIZE_UNITS.inspect}"
       end
       _validate_positive_fixnum(:partition_size, partition_size)
+      _validate_positive_fixnum(:partition_start_timestamp, partition_start_timestamp)
+      _validate_positive_fixnum(:end_timestamp, end_timestamp)
 
       timestamp = partition_start_timestamp
 
