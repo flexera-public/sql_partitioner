@@ -70,10 +70,11 @@ module SqlPartitioner
     # @param [Fixnum] partition_size, intervals covered by the new partition
     # @param [Fixnum] days_into_future, how many days into the future need to be covered by partitions
     # @param [Boolean] dry_run, Defaults to false. If true, query wont be executed.
+    # @return [Hash] partition_data hash of the partitions appended
     # @raise [ArgumentError] if  window size is nil or not greater than 0
     def append_partition_intervals(partition_size_unit, partition_size, days_into_future = 30, dry_run = false)
       partitions = Partition.all(adapter, table_name)
-      if partitions.blank?
+      if partitions.blank? || partitions.non_future_partitions.blank?
         raise "partitions must be properly initialized before appending"
       end
       latest_partition = partitions.latest_partition
@@ -89,6 +90,8 @@ module SqlPartitioner
       end
 
       log(msg)
+
+      new_partition_data
     end
 
     # drop partitions that are older than days(input) from now
@@ -105,17 +108,18 @@ module SqlPartitioner
     # @param [Boolean] dry_run, Defaults to false. If true, query wont be executed.
     def drop_partitions_older_than(timestamp, dry_run = false)
       partitions = Partition.all(adapter, table_name).older_than_timestamp(timestamp)
+      partition_names = partitions.map(&:name)
 
-      if partitions.blank?
+      if partition_names.empty?
         msg = "Drop: No-Op - No partitions older than #{timestamp}, i.e. #{Time.at(@tum.from_time_unit(timestamp))} to drop"
       else
-        partition_names = partitions.map(&:name)
-
         msg = "Drop: Dropped partitions: #{partition_names.inspect}"
         drop_partitions(partition_names, dry_run)
       end
 
       log(msg)
+
+      partition_names
     end
   end
 end
