@@ -17,15 +17,18 @@ describe SqlPartitioner::LockWaitTimeoutHandler do
         @orig_global_lock_wait_timeout.should_not == @with_lock_wait_timeout
       end
       it "should set and reset lock_wait_timeout" do
+        step = 0
         SqlPartitioner::LockWaitTimeoutHandler.with_lock_wait_timeout(@ar_adapter, @with_lock_wait_timeout) do
           @first_db_connection.select_value("SELECT @@local.lock_wait_timeout").should      == @with_lock_wait_timeout.to_s
           @first_db_connection.select_value("SELECT @@global.lock_wait_timeout").should_not == @with_lock_wait_timeout.to_s
 
           @first_db_connection.execute("SELECT 1 FROM DUAL")
+          step += 1
         end
 
         @first_db_connection.select_value("SELECT @@local.lock_wait_timeout").should  == @orig_local_lock_wait_timeout.to_s
         @first_db_connection.select_value("SELECT @@global.lock_wait_timeout").should == @orig_global_lock_wait_timeout.to_s
+        step.should == 1
       end
     end
     context "with a second db connection" do
@@ -52,27 +55,35 @@ describe SqlPartitioner::LockWaitTimeoutHandler do
           @orig_global_lock_wait_timeout.should_not == @with_lock_wait_timeout
         end
         it "should not affect the lock_wait_timeout value of the second db connection" do
+          step = 0
           SqlPartitioner::LockWaitTimeoutHandler.with_lock_wait_timeout(@ar_adapter, @with_lock_wait_timeout) do
             @second_db_connection.select_value("SELECT @@local.lock_wait_timeout").should_not  == @with_lock_wait_timeout
             @second_db_connection.select_value("SELECT @@global.lock_wait_timeout").should_not == @with_lock_wait_timeout
 
             @first_db_connection.execute("SELECT 1 FROM DUAL")
+            step += 1
           end
+          step.should == 1
         end
       end
       context "and the second db connection holding a lock" do
         it "should timeout quickly" do
           @second_db_connection.execute("LOCK TABLE test_events WRITE")
 
+          step = 0
           begin
             lambda do
               SqlPartitioner::LockWaitTimeoutHandler.with_lock_wait_timeout(@ar_adapter, @with_lock_wait_timeout) do
+                step += 1
                 @first_db_connection.execute("LOCK TABLE test_events WRITE")
               end
             end.should raise_error(ActiveRecord::StatementInvalid, /Lock wait timeout exceeded/)
           ensure
             @second_db_connection.execute("UNLOCK TABLES")
+            step.should == 1
+            step += 1
           end
+          step.should == 2
         end
       end
     end
