@@ -1,10 +1,11 @@
 require File.expand_path("../spec_helper", File.dirname(__FILE__))
 
 describe "BasePartitionsManager with ARAdapter" do
+  before(:each) do
+    @ar_adapter = SqlPartitioner::ARAdapter.new(ActiveRecord::Base.connection)
+  end
   describe "#initialize_partitioning" do
     before(:each) do
-      @ar_adapter = SqlPartitioner::ARAdapter.new(ActiveRecord::Base.connection)
-
       @partition_manager = SqlPartitioner::BasePartitionsManager.new(
         :adapter      => @ar_adapter,
         :current_time => Time.utc(2014,04,18),
@@ -35,8 +36,6 @@ describe "BasePartitionsManager with ARAdapter" do
 
   describe "#drop_partitions" do
     before(:each) do
-      @ar_adapter = SqlPartitioner::ARAdapter.new(ActiveRecord::Base.connection)
-
       @partition_manager = SqlPartitioner::BasePartitionsManager.new(
         :adapter      => @ar_adapter,
         :current_time => Time.utc(2014,04,16),
@@ -72,7 +71,7 @@ describe "BasePartitionsManager with ARAdapter" do
     end
     context "with an attempt to drop the future partition" do
       before(:each) do
-        @partition_to_drop = {SqlPartitioner::Partition::FUTURE_PARTITION_NAME => SqlPartitioner::Partition::FUTURE_PARTITION_NAME}
+        @partition_to_drop = {SqlPartitioner::Partition::FUTURE_PARTITION_NAME => SqlPartitioner::Partition::FUTURE_PARTITION_VALUE}
       end
       it "should fail to drop the future partition" do
         lambda do
@@ -84,7 +83,7 @@ describe "BasePartitionsManager with ARAdapter" do
       before(:each) do
         @partition_to_drop = {'until_2014_02_17' => 1392595200}
       end
-      it "should fail to drop the future partition" do
+      it "should fail to drop the non-existent partition" do
         lambda do
           @partition_manager.drop_partitions(@partition_to_drop.keys)
         end.should raise_error(ActiveRecord::StatementInvalid)
@@ -94,8 +93,6 @@ describe "BasePartitionsManager with ARAdapter" do
 
   describe "#reorg_future_partition" do
     before(:each) do
-      @ar_adapter = SqlPartitioner::ARAdapter.new(ActiveRecord::Base.connection)
-
       @partition_manager = SqlPartitioner::BasePartitionsManager.new(
         :adapter      => @ar_adapter,
         :current_time => Time.utc(2014,04,16),
@@ -107,7 +104,7 @@ describe "BasePartitionsManager with ARAdapter" do
       @partition_manager.initialize_partitioning(@partitions)
     end
 
-    context "with reorganizing the future partition into a partition with timestamp < existing partititon" do
+    context "with reorganizing the future partition into a partition with timestamp < existing partition" do
       before(:each) do
         @partition_to_reorg = {'until_2014_02_17' => 1392595200}
       end
@@ -117,7 +114,7 @@ describe "BasePartitionsManager with ARAdapter" do
         end.should raise_error(ActiveRecord::StatementInvalid)
       end
     end
-    context "with reorganizing the future partition into one new partition with timestamp == existing partititon" do
+    context "with reorganizing the future partition into one new partition with timestamp == existing partition" do
       before(:each) do
         @partition_to_reorg = {'until_2014_04_17' => 1397692800}
       end
@@ -127,7 +124,7 @@ describe "BasePartitionsManager with ARAdapter" do
         end.should raise_error(ActiveRecord::StatementInvalid)
       end
     end
-    context "with reorganizing the future partition into one new partition with timestamp > existing partititon" do
+    context "with reorganizing the future partition into one new partition with timestamp > existing partition" do
       before(:each) do
         @partition_to_reorg = {'until_2014_05_17' => 1400284800}
       end
@@ -158,21 +155,21 @@ describe "BasePartitionsManager" do
 
   describe "#_validate_partition_data" do
     context "when input is not valid" do
-      it "should raise error when future partion is not pointing to proper value" do
+      it "should raise error when future partition is not pointing to proper value" do
         lambda {
           @partition_manager.send(:_validate_partition_data, {
               SqlPartitioner::BasePartitionsManager::FUTURE_PARTITION_NAME => 1
             }
           )
-        }.should raise_error(ArgumentError, /future partion name/)
+        }.should raise_error(ArgumentError, /future partition name/)
       end
-      it "should raise error when future partion is not pointing to proper value" do
+      it "should raise error when non-future-partition is pointing to future-partition value" do
         lambda {
           @partition_manager.send(:_validate_partition_data, {
               "name" => SqlPartitioner::BasePartitionsManager::FUTURE_PARTITION_VALUE
             }
           )
-        }.should raise_error(ArgumentError, /future partion name/)
+        }.should raise_error(ArgumentError, /future partition name/)
       end
     end
     context "when input is valid" do
@@ -182,6 +179,7 @@ describe "BasePartitionsManager" do
             SqlPartitioner::BasePartitionsManager::FUTURE_PARTITION_VALUE
           }
         )).to be true
+        expect(@partition_manager.send(:_validate_partition_data, { "any_string" => 123 })).to be true
       end
     end
   end
@@ -260,6 +258,11 @@ describe "BasePartitionsManager" do
         lambda {
           @partition_manager.send(:_validate_partition_names, {})
         }.should raise_error(ArgumentError, /expected to be Array/)
+      end
+      it "should raise error when not an array of strings is passed" do
+        lambda {
+          @partition_manager.send(:_validate_partition_names, [123])
+        }.should raise_error(ArgumentError, /String expected/)
       end
     end
     context "when input is valid" do

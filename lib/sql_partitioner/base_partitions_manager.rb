@@ -95,7 +95,7 @@ module SqlPartitioner
 
         if key == FUTURE_PARTITION_NAME && value != FUTURE_PARTITION_VALUE ||
            key != FUTURE_PARTITION_NAME && value == FUTURE_PARTITION_VALUE
-          _raise_arg_err "future partion name '#{FUTURE_PARTITION_NAME}' must use timestamp '#{FUTURE_PARTITION_VALUE}',"\
+          _raise_arg_err "future partition name '#{FUTURE_PARTITION_NAME}' must use timestamp '#{FUTURE_PARTITION_VALUE}',"\
                          "but got name #{key} and timestamp #{value}"
         end
       end
@@ -110,7 +110,7 @@ module SqlPartitioner
     #   {partition_name1 => partition_timestamp_1 ,
     #    partition_name2 => partition_timestamp_2...}
     # For example:
-    #   {'until_2014_03_17' => 1395077901193149
+    #   {'until_2014_03_17' => 1395077901193149,
     #    'until_2014_04_01' => 1396373901193398}
     #
     # @param [Hash] partition_data
