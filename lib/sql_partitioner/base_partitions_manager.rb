@@ -19,34 +19,42 @@ module SqlPartitioner
 
     #----------- Validation Helpers ---------------
 
+    def _validate_positive_fixnum(parameter_name, parameter)
+      _validate_class(parameter_name, parameter, Fixnum)
+
+      if parameter <= 0
+        _raise_arg_err "#{parameter_name} should be > 0"
+      end
+      true
+    end
+    private :_validate_positive_fixnum
+
+    def _validate_class(parameter_name, parameter, expected_class)
+      if !parameter.kind_of?(expected_class)
+        _raise_arg_err("class of #{parameter_name} expected to be #{expected_class} but instead was #{parameter.class}")
+      end
+      true
+    end
+    private :_validate_class
+
+
     def _validate_timestamp(timestamp)
       return true if timestamp == FUTURE_PARTITION_VALUE
 
-      if !timestamp.kind_of?(Integer) || timestamp < 0
-        _raise_arg_err  "timestamp should be a positive integer,"\
-                        "but #{timestamp.class} found"
-      end
+      _validate_positive_fixnum(:timestamp, timestamp)
 
       true
     end
     private :_validate_timestamp
 
     def _validate_partition_name(partition_name)
-      unless partition_name.kind_of?(String)
-        _raise_arg_err "Invalid value #{partition_name}. String expected but"\
-                       " #{partition_name.class} found"
-      end
-
-      true
+      _validate_class('partition_name', partition_name, String)
     end
     private :_validate_partition_name
 
     def _validate_partition_names(partition_names)
-      unless partition_names.kind_of?(Array)
-        msg = "partition_names should be array but #{partition_names.class}"\
-               " found"
-        _raise_arg_err(msg)
-      end
+      _validate_class('partition_names', partition_names, Array)
+
       partition_names.each do |name|
         _validate_partition_name(name)
       end
@@ -79,10 +87,8 @@ module SqlPartitioner
     private :_validate_drop_partitions_names
 
     def _validate_partition_data(partition_data)
-      unless partition_data.kind_of?(Hash)
-        _raise_arg_err "partition data should be Hash but"\
-                       " #{partition_data.class} found"
-      end
+      _validate_class('partition_data', partition_data, Hash)
+
       partition_data.each_pair do |key, value|
         _validate_partition_name(key)
         _validate_timestamp(value)
@@ -141,6 +147,8 @@ module SqlPartitioner
     # @return [Boolean] true if not dry run and query is executed else false
     # @return [String] sql if dry_run is true
     def reorg_future_partition(partition_data, dry_run = false)
+      partition_data = partition_data.dup
+
       if partition_data.any?
         partition_data[FUTURE_PARTITION_NAME] = FUTURE_PARTITION_VALUE
       end
