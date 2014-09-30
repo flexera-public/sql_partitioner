@@ -262,7 +262,7 @@ describe "BasePartitionsManager" do
       it "should raise error when not an array of strings is passed" do
         lambda {
           @partition_manager.send(:_validate_partition_names, [123])
-        }.should raise_error(ArgumentError, /String expected/)
+        }.should raise_error(ArgumentError, /expected to be String/)
       end
     end
     context "when input is valid" do
