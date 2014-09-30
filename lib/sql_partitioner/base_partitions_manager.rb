@@ -19,13 +19,28 @@ module SqlPartitioner
 
     #----------- Validation Helpers ---------------
 
+    def _validate_positive_fixnum(parameter_name, parameter)
+      _validate_fixnum(parameter_name, parameter)
+
+      if parameter <= 0
+        _raise_arg_err "#{parameter_name} should be > 0"
+      end
+      true
+    end
+    private :_validate_positive_fixnum
+
+    def _validate_fixnum(parameter_name, parameter)
+      if !parameter.kind_of?(Fixnum)
+        _raise_arg_err("#{parameter_name} expected to be fixnum but #{parameter.class} found")
+      end
+      true
+    end
+    private :_validate_fixnum
+
     def _validate_timestamp(timestamp)
       return true if timestamp == FUTURE_PARTITION_VALUE
 
-      if !timestamp.kind_of?(Integer) || timestamp < 0
-        _raise_arg_err  "timestamp should be a positive integer,"\
-                        "but #{timestamp.class} found"
-      end
+      _validate_positive_fixnum(:timestamp, timestamp)
 
       true
     end

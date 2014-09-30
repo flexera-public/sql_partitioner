@@ -186,28 +186,45 @@ describe "BasePartitionsManager" do
     end
   end
 
-  describe "#_validate_timestamp" do
+  describe "#_validate_positive_fixnum" do
     context "when input is not valid" do
-      it "should raise error with a String" do
-        lambda {
-          @partition_manager.send(:_validate_timestamp, 'H')
-        }.should raise_error(ArgumentError, /timestamp should be a positive integer/)
-      end
       it "should raise error with negative integer" do
         lambda {
-          @partition_manager.send(:_validate_timestamp, -1)
-        }.should raise_error(ArgumentError, /timestamp should be a positive integer/)
-      end
-      it "should raise error with nil" do
-        lambda {
-          @partition_manager.send(:_validate_timestamp, nil)
-        }.should raise_error(ArgumentError, /timestamp should be a positive integer/)
+          @partition_manager.send(:_validate_positive_fixnum, :timestamp, -1)
+        }.should raise_error(ArgumentError, /timestamp should be > 0/)
       end
     end
     context "when input is valid" do
       it "should return true" do
-        expect(@partition_manager.send(:_validate_timestamp, 10)).to be true
+        expect(@partition_manager.send(:_validate_positive_fixnum, :timestamp, 10)).to be true
       end
+    end
+  end
+
+  describe "#_validate_fixnum" do
+    context "when input is not valid" do
+      it "should raise error with a String" do
+        lambda {
+          @partition_manager.send(:_validate_fixnum, :timestamp,'H')
+        }.should raise_error(ArgumentError, /expected to be fixnum but String found/)
+      end
+      it "should raise error with nil" do
+        lambda {
+          @partition_manager.send(:_validate_fixnum, :timestamp, nil)
+        }.should raise_error(ArgumentError, /expected to be fixnum but NilClass found/)
+      end
+    end
+    context "when input is valid" do
+      it "should return true" do
+        expect(@partition_manager.send(:_validate_fixnum, :timestamp, 10)).to be true
+        expect(@partition_manager.send(:_validate_fixnum, :timestamp, -10)).to be true
+      end
+    end
+  end
+
+  describe "#_validate_timestamp" do
+    it "should return true if the future partition value is passed" do
+      @partition_manager.send(:_validate_timestamp, SqlPartitioner::BasePartitionsManager::FUTURE_PARTITION_VALUE)
     end
   end
 
