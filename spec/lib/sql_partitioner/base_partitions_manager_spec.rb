@@ -188,6 +188,17 @@ describe "BasePartitionsManager" do
 
   describe "#_validate_positive_fixnum" do
     context "when input is not valid" do
+      it "should raise error with a String" do
+        lambda {
+          @partition_manager.send(:_validate_positive_fixnum, :timestamp, 'H')
+        }.should raise_error(ArgumentError, /expected to be Fixnum but instead was String/)
+      end
+      it "should raise error with nil" do
+        lambda {
+          @partition_manager.send(:_validate_positive_fixnum, :timestamp, nil)
+        }.should raise_error(ArgumentError, /expected to be Fixnum but instead was NilClass/)
+      end
+
       it "should raise error with negative integer" do
         lambda {
           @partition_manager.send(:_validate_positive_fixnum, :timestamp, -1)
@@ -201,23 +212,23 @@ describe "BasePartitionsManager" do
     end
   end
 
-  describe "#_validate_fixnum" do
-    context "when input is not valid" do
-      it "should raise error with a String" do
+  describe "#_validate_class" do
+    context "when class is not correct" do
+      it "should raise error when a String provided when Integer expected" do
         lambda {
-          @partition_manager.send(:_validate_fixnum, :timestamp,'H')
-        }.should raise_error(ArgumentError, /expected to be fixnum but String found/)
+          @partition_manager.send(:_validate_class, :timestamp, 'string', Integer)
+        }.should raise_error(ArgumentError, /expected to be Integer but instead was String/)
       end
-      it "should raise error with nil" do
+      it "should raise error when nil provided when Fixnum expected" do
         lambda {
-          @partition_manager.send(:_validate_fixnum, :timestamp, nil)
-        }.should raise_error(ArgumentError, /expected to be fixnum but NilClass found/)
+          @partition_manager.send(:_validate_class, :timestamp, nil, Fixnum)
+        }.should raise_error(ArgumentError, /expected to be Fixnum but instead was NilClass/)
       end
     end
-    context "when input is valid" do
+    context "when class is as expected" do
       it "should return true" do
-        expect(@partition_manager.send(:_validate_fixnum, :timestamp, 10)).to be true
-        expect(@partition_manager.send(:_validate_fixnum, :timestamp, -10)).to be true
+        expect(@partition_manager.send(:_validate_class, :timestamp, 'example', String)).to be true
+        expect(@partition_manager.send(:_validate_class, :timestamp, {:a => 1}, Hash)).to be true
       end
     end
   end
@@ -233,7 +244,7 @@ describe "BasePartitionsManager" do
       it "should raise error when not String" do
         lambda {
           @partition_manager.send(:_validate_partition_name, 1)
-        }.should raise_error(ArgumentError, /String expected/)
+        }.should raise_error(ArgumentError, /expected to be String/)
       end
     end
     context "when input is valid" do
@@ -248,7 +259,7 @@ describe "BasePartitionsManager" do
       it "should raise error when not an array is passed" do
         lambda {
           @partition_manager.send(:_validate_partition_names, {})
-        }.should raise_error(ArgumentError, /should be array/)
+        }.should raise_error(ArgumentError, /expected to be Array/)
       end
     end
     context "when input is valid" do
