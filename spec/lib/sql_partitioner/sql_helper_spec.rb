@@ -16,6 +16,12 @@ describe "SqlHelper" do
     end
   end
 
+  describe ".create_partition" do
+    it "should return something" do
+      SqlPartitioner::SQL.create_partition(@table_name, "until_2014_03_17", "future").should_not be_empty
+    end
+  end
+
   describe ".sort_partition_data" do
     before(:each) do
       @partition_data = {

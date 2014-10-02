@@ -206,6 +206,8 @@ module SqlPartitioner
           _execute(sql)
        
           log "\n#{Partition.to_log(Partition.all(adapter, table_name))}", false
+
+          true
         end
       else
         false
