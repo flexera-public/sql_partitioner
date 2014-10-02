@@ -34,6 +34,99 @@ describe "BasePartitionsManager with ARAdapter" do
     end
   end
 
+  describe "#reorg_future_partition" do
+    before(:each) do
+      @partition_manager = SqlPartitioner::BasePartitionsManager.new(
+        :adapter      => @ar_adapter,
+        :current_time => Time.utc(2014,04,18),
+        :table_name   => 'test_events',
+        :logger       => Logger.new(STDOUT)
+      )
+    end
+
+    context "without the future partition passed" do
+      it "should add the future partition and reorganize it" do
+        @partition_manager.initialize_partitioning({})
+
+        @partition_manager.reorg_future_partition({'until_2014_03_17' => 1395014400})
+        SqlPartitioner::Partition.all(@ar_adapter, 'test_events').map{|p| [p.name, p.timestamp]}.should == [
+          ["until_2014_03_17", 1395014400],
+          ["future", "MAXVALUE"]
+        ]
+      end
+    end
+  end
+
+  describe "#_execute" do
+    before(:each) do
+      @options = {
+        :adapter      => @ar_adapter,
+        :current_time => Time.utc(2014,04,18),
+        :table_name   => 'test_events',
+        :logger       => Logger.new(STDOUT)
+      }
+      @sql_statement = "SELECT @@local.lock_wait_timeout AS lock_wait_timeout"
+    end
+
+    context "with a timeout" do
+      before(:each) do
+        @partition_manager = SqlPartitioner::BasePartitionsManager.new(
+          @options.merge(:lock_wait_timeout => 1)
+        )
+      end
+      it "should return the result after changing lock_wait_timeout" do
+        result = @partition_manager.send(:_execute, @sql_statement)
+        result.all_hashes.first["lock_wait_timeout"].should == "1"
+      end
+    end
+    context "with no timeout" do
+      before(:each) do
+        @partition_manager = SqlPartitioner::BasePartitionsManager.new(@options)
+      end
+      it "should return the result without changing lock_wait_timeout" do
+        result = @partition_manager.send(:_execute, @sql_statement)
+        result.all_hashes.first["lock_wait_timeout"].should == "31536000"
+      end
+    end
+  end
+
+  describe "#_execute_and_display_partition_info" do
+    before(:each) do
+      @partition_manager = SqlPartitioner::BasePartitionsManager.new(
+        :adapter      => @ar_adapter,
+        :current_time => Time.utc(2014,04,18),
+        :table_name   => 'test_events',
+        :logger       => Logger.new(STDOUT)
+      )
+    end
+    context "with no sql statement to be executed" do
+      it "should return false" do
+        expect(@partition_manager.send(:_execute_and_display_partition_info, nil)).to be false
+      end
+    end
+    context "with sql statement to be executed" do
+      before(:each) do
+        @sql_statement = "SELECT database()"
+      end
+      context "and dry_run == true" do
+        before(:each) do
+          @dry_run = true
+        end
+        it "should return the sql statement" do
+          expect(@partition_manager.send(:_execute_and_display_partition_info, @sql_statement, @dry_run)).to be @sql_statement
+        end
+      end
+      context "and dry_run == false" do
+        before(:each) do
+          @dry_run = false
+        end
+        it "should execute the sql statement & return true" do
+          expect(@partition_manager.send(:_execute_and_display_partition_info, @sql_statement, @dry_run)).to be true
+        end
+      end
+    end
+  end
+
   describe "#drop_partitions" do
     before(:each) do
       @partition_manager = SqlPartitioner::BasePartitionsManager.new(
@@ -151,6 +244,20 @@ describe "BasePartitionsManager" do
       :table_name   => 'test_events',
       :logger       => Logger.new(STDOUT)
     )
+  end
+
+  describe "#log" do
+    before(:each) do
+      @to_log = "Log this!"
+    end
+    it "should not log a prefix with no prefix" do
+      @partition_manager.logger.should_receive(:info).with(@to_log)
+      @partition_manager.log(@to_log, prefix = false)
+    end
+    it "should log a prefix with a prefix" do
+      @partition_manager.logger.should_receive(:info).with("[SqlPartitioner::BasePartitionsManager]#{@to_log}")
+      @partition_manager.log(@to_log, prefix = true)
+    end
   end
 
   describe "#_validate_partition_data" do

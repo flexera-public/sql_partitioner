@@ -28,6 +28,7 @@ Gem::Specification.new do |gem|
   # Test suite
   # ---------------------------------------------------------------------
   gem.add_development_dependency("rspec",        '3.0.0')
+  gem.add_development_dependency("simplecov",    '0.9.1')
 
   gem.add_development_dependency("mysql", "2.8.1")
   gem.add_development_dependency("activerecord", '2.3.9')
@@ -41,7 +42,6 @@ Gem::Specification.new do |gem|
 
   gem.add_development_dependency('data_mapper',       dm_gems_version)
   gem.add_development_dependency('dm-mysql-adapter',  dm_gems_version)
-
 
 #  gem.add_development_dependency('ruby-debug',   '0.10.4')
 end

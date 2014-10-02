@@ -1,8 +1,22 @@
 require File.expand_path("../../spec_helper", File.dirname(__FILE__))
 
 shared_examples_for "an adapter" do
-  before(:each) do
+  describe "#execute" do
+    it "should execute the SQL statement passed" do
+      adapter.execute("SET @sql_partitioner_test = 1")
+
+      adapter.select("SELECT @sql_partitioner_test").first.to_i.should == 1
+
+      adapter.execute("SET @sql_partitioner_test = NULL")
+    end
   end
+
+  describe "#schema_name" do
+    it "should return the schema_name" do
+      adapter.schema_name.should == "sql_partitioner_test"
+    end
+  end
+
   describe ".select" do
     context "with multiple columns selected" do
       context "and no data returned" do
