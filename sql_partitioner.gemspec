@@ -8,7 +8,7 @@ Gem::Specification.new do |gem|
   gem.version          = SqlPartitioner::VERSION
 
   gem.authors          = ['Dominic Metzger, Sumner McCarty, Prakash Selvaraj, Jim Slattery']
-  gem.date             = "2014-09-29"
+  gem.date             = "2014-10-02"
 
   gem.summary          = %q{SQL Partitioning.}
   gem.description      = %q{SQL Partitioning}

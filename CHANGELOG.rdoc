@@ -1,0 +1,8 @@
+== HEAD
+
+== 0.4.0 / 2014-10-02
+
+  * Added development dependency simplecov
+  * Improved test coverage
+  * Fixed return value for _execute_and_display_partition_info when SQL is executed.
+    Before it returned whatever logger.info happened to return. Now it returns true.
