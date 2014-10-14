@@ -1,13 +1,10 @@
 require File.expand_path("../spec_helper", File.dirname(__FILE__))
 
-describe "BasePartitionsManager with ARAdapter" do
-  before(:each) do
-    @ar_adapter = SqlPartitioner::ARAdapter.new(ActiveRecord::Base.connection)
-  end
+shared_examples_for "BasePartitionsManager with an adapter" do
   describe "#initialize_partitioning" do
     before(:each) do
       @partition_manager = SqlPartitioner::BasePartitionsManager.new(
-        :adapter      => @ar_adapter,
+        :adapter      => adapter,
         :current_time => Time.utc(2014,04,18),
         :table_name   => 'test_events',
         :logger       => Logger.new(STDOUT)
@@ -17,7 +14,7 @@ describe "BasePartitionsManager with ARAdapter" do
     context "with some partitions passed" do
       it "should create the future partition and the partition specified" do
         @partition_manager.initialize_partitioning({'until_2014_03_17' => 1395014400})
-        SqlPartitioner::Partition.all(@ar_adapter, 'test_events').map{|p| [p.name, p.timestamp]}.should == [
+        SqlPartitioner::Partition.all(adapter, 'test_events').map{|p| [p.name, p.timestamp]}.should == [
           ["until_2014_03_17", 1395014400],
           ["future", "MAXVALUE"]
         ]
@@ -27,7 +24,7 @@ describe "BasePartitionsManager with ARAdapter" do
     context "with no partition passed" do
       it "should create the future partition" do
         @partition_manager.initialize_partitioning({})
-        SqlPartitioner::Partition.all(@ar_adapter, 'test_events').map{|p| [p.name, p.timestamp]}.should == [
+        SqlPartitioner::Partition.all(adapter, 'test_events').map{|p| [p.name, p.timestamp]}.should == [
           ["future", "MAXVALUE"]
         ]
       end
@@ -37,7 +34,7 @@ describe "BasePartitionsManager with ARAdapter" do
   describe "#reorg_future_partition" do
     before(:each) do
       @partition_manager = SqlPartitioner::BasePartitionsManager.new(
-        :adapter      => @ar_adapter,
+        :adapter      => adapter,
         :current_time => Time.utc(2014,04,18),
         :table_name   => 'test_events',
         :logger       => Logger.new(STDOUT)
@@ -49,7 +46,7 @@ describe "BasePartitionsManager with ARAdapter" do
         @partition_manager.initialize_partitioning({})
 
         @partition_manager.reorg_future_partition({'until_2014_03_17' => 1395014400})
-        SqlPartitioner::Partition.all(@ar_adapter, 'test_events').map{|p| [p.name, p.timestamp]}.should == [
+        SqlPartitioner::Partition.all(adapter, 'test_events').map{|p| [p.name, p.timestamp]}.should == [
           ["until_2014_03_17", 1395014400],
           ["future", "MAXVALUE"]
         ]
@@ -57,43 +54,10 @@ describe "BasePartitionsManager with ARAdapter" do
     end
   end
 
-  describe "#_execute" do
-    before(:each) do
-      @options = {
-        :adapter      => @ar_adapter,
-        :current_time => Time.utc(2014,04,18),
-        :table_name   => 'test_events',
-        :logger       => Logger.new(STDOUT)
-      }
-      @sql_statement = "SELECT @@local.lock_wait_timeout AS lock_wait_timeout"
-    end
-
-    context "with a timeout" do
-      before(:each) do
-        @partition_manager = SqlPartitioner::BasePartitionsManager.new(
-          @options.merge(:lock_wait_timeout => 1)
-        )
-      end
-      it "should return the result after changing lock_wait_timeout" do
-        result = @partition_manager.send(:_execute, @sql_statement)
-        result.all_hashes.first["lock_wait_timeout"].should == "1"
-      end
-    end
-    context "with no timeout" do
-      before(:each) do
-        @partition_manager = SqlPartitioner::BasePartitionsManager.new(@options)
-      end
-      it "should return the result without changing lock_wait_timeout" do
-        result = @partition_manager.send(:_execute, @sql_statement)
-        result.all_hashes.first["lock_wait_timeout"].should == "31536000"
-      end
-    end
-  end
-
   describe "#_execute_and_display_partition_info" do
     before(:each) do
       @partition_manager = SqlPartitioner::BasePartitionsManager.new(
-        :adapter      => @ar_adapter,
+        :adapter      => adapter,
         :current_time => Time.utc(2014,04,18),
         :table_name   => 'test_events',
         :logger       => Logger.new(STDOUT)
@@ -130,7 +94,7 @@ describe "BasePartitionsManager with ARAdapter" do
   describe "#drop_partitions" do
     before(:each) do
       @partition_manager = SqlPartitioner::BasePartitionsManager.new(
-        :adapter      => @ar_adapter,
+        :adapter      => adapter,
         :current_time => Time.utc(2014,04,16),
         :table_name   => 'test_events',
         :logger       => Logger.new(STDOUT)
@@ -146,7 +110,7 @@ describe "BasePartitionsManager with ARAdapter" do
       end
       it "should drop the partition specified" do
         @partition_manager.drop_partitions(@partition_to_drop.keys)
-        SqlPartitioner::Partition.all(@ar_adapter, 'test_events').map{|p| [p.name, p.timestamp]}.should == [
+        SqlPartitioner::Partition.all(adapter, 'test_events').map{|p| [p.name, p.timestamp]}.should == [
           ['until_2014_04_17', 1397692800],
           ["future", "MAXVALUE"]
         ]
@@ -179,7 +143,7 @@ describe "BasePartitionsManager with ARAdapter" do
       it "should fail to drop the non-existent partition" do
         lambda do
           @partition_manager.drop_partitions(@partition_to_drop.keys)
-        end.should raise_error(ActiveRecord::StatementInvalid)
+        end.should raise_error(statement_invalid_exception_class)
       end
     end
   end
@@ -187,7 +151,7 @@ describe "BasePartitionsManager with ARAdapter" do
   describe "#reorg_future_partition" do
     before(:each) do
       @partition_manager = SqlPartitioner::BasePartitionsManager.new(
-        :adapter      => @ar_adapter,
+        :adapter      => adapter,
         :current_time => Time.utc(2014,04,16),
         :table_name   => 'test_events',
         :logger       => Logger.new(STDOUT)
@@ -204,7 +168,7 @@ describe "BasePartitionsManager with ARAdapter" do
       it "should fail to reorganize the future partition" do
         lambda do
           @partition_manager.reorg_future_partition(@partition_to_reorg)
-        end.should raise_error(ActiveRecord::StatementInvalid)
+        end.should raise_error(statement_invalid_exception_class)
       end
     end
     context "with reorganizing the future partition into one new partition with timestamp == existing partition" do
@@ -214,7 +178,7 @@ describe "BasePartitionsManager with ARAdapter" do
       it "should fail to reorganize the future partition" do
         lambda do
           @partition_manager.reorg_future_partition(@partition_to_reorg)
-        end.should raise_error(ActiveRecord::StatementInvalid)
+        end.should raise_error(statement_invalid_exception_class)
       end
     end
     context "with reorganizing the future partition into one new partition with timestamp > existing partition" do
@@ -223,13 +187,69 @@ describe "BasePartitionsManager with ARAdapter" do
       end
       it "should succeed in reorganizing the future partition" do
         @partition_manager.reorg_future_partition(@partition_to_reorg)
-        SqlPartitioner::Partition.all(@ar_adapter, 'test_events').map{|p| [p.name, p.timestamp]}.should == [
+        SqlPartitioner::Partition.all(adapter, 'test_events').map{|p| [p.name, p.timestamp]}.should == [
           ['until_2014_03_17', 1395014400],
           ['until_2014_04_17', 1397692800],
           ['until_2014_05_17', 1400284800],
           ["future",           "MAXVALUE"]
         ]
       end
+    end
+  end
+end
+
+describe "BasePartitionsManager with ARAdapter" do
+  it_should_behave_like "BasePartitionsManager with an adapter" do
+    let(:statement_invalid_exception_class) do
+      ActiveRecord::StatementInvalid
+    end
+    let(:adapter) do
+      SqlPartitioner::ARAdapter.new(ActiveRecord::Base.connection)
+    end
+  end
+
+  # TODO: Find a way to make this test also work for DM
+  describe "#_execute" do
+    before(:each) do
+      @options = {
+        :adapter      => SqlPartitioner::ARAdapter.new(ActiveRecord::Base.connection),
+        :current_time => Time.utc(2014,04,18),
+        :table_name   => 'test_events',
+        :logger       => Logger.new(STDOUT)
+      }
+      @sql_statement = "SELECT @@local.lock_wait_timeout AS lock_wait_timeout"
+    end
+
+    context "with a timeout" do
+      before(:each) do
+        @partition_manager = SqlPartitioner::BasePartitionsManager.new(
+          @options.merge(:lock_wait_timeout => 1)
+        )
+      end
+      it "should return the result after changing lock_wait_timeout" do
+        result = @partition_manager.send(:_execute, @sql_statement)
+        result.each_hash{|hash| hash["lock_wait_timeout"].should == "1"}
+      end
+    end
+    context "with no timeout" do
+      before(:each) do
+        @partition_manager = SqlPartitioner::BasePartitionsManager.new(@options)
+      end
+      it "should return the result without changing lock_wait_timeout" do
+        result = @partition_manager.send(:_execute, @sql_statement)
+        result.each_hash{|hash| hash["lock_wait_timeout"].should == "31536000" }
+      end
+    end
+  end
+end
+
+describe "BasePartitionsManager with DM Adapter" do
+  it_should_behave_like "BasePartitionsManager with an adapter" do
+    let(:statement_invalid_exception_class) do
+      DataObjects::SQLError
+    end
+    let(:adapter) do
+      SqlPartitioner::DMAdapter.new(DataMapper.repository.adapter)
     end
   end
 end
