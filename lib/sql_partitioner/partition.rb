@@ -121,18 +121,14 @@ module SqlPartitioner
                   [attribute.to_s.length, max_length].max + 3
                 end
 
-      header = []
-      TO_LOG_ATTRIBUTES_SORT_ORDER.map.each_with_index do |attribute, index|
-        header << attribute.to_s.ljust(padding[index])
-      end
-      header = header.join
+      header = TO_LOG_ATTRIBUTES_SORT_ORDER.each_with_index.map do |attribute, index|
+        attribute.to_s.ljust(padding[index])
+      end.join
 
       body = partitions.map do |partition|
-               result = []
-               TO_LOG_ATTRIBUTES_SORT_ORDER.map.each_with_index do |attribute, index|
-                 result << partition.send(attribute).to_s.ljust(padding[index])
-               end
-               result.join
+               TO_LOG_ATTRIBUTES_SORT_ORDER.each_with_index.map do |attribute, index|
+                 partition.send(attribute).to_s.ljust(padding[index])
+               end.join
              end.join("\n")
 
       seperator = ''.ljust(padding.inject(&:+),'-')
