@@ -76,7 +76,7 @@ describe "BasePartitionsManager with ARAdapter" do
       end
       it "should return the result after changing lock_wait_timeout" do
         result = @partition_manager.send(:_execute, @sql_statement)
-        result.all_hashes.first["lock_wait_timeout"].should == "1"
+        result.each_hash{|hash| hash["lock_wait_timeout"].should == "1"}
       end
     end
     context "with no timeout" do
@@ -85,7 +85,7 @@ describe "BasePartitionsManager with ARAdapter" do
       end
       it "should return the result without changing lock_wait_timeout" do
         result = @partition_manager.send(:_execute, @sql_statement)
-        result.all_hashes.first["lock_wait_timeout"].should == "31536000"
+        result.each_hash{|hash| hash["lock_wait_timeout"].should == "31536000" }
       end
     end
   end
