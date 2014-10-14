@@ -46,6 +46,9 @@ module SqlPartitioner
   class Partition
     FUTURE_PARTITION_NAME  = 'future'
     FUTURE_PARTITION_VALUE = 'MAXVALUE'
+    TO_LOG_ATTRIBUTES_SORT_ORDER = [
+      :ordinal_position, :name, :timestamp, :table_rows, :data_length, :index_length
+    ]
 
     def initialize(partition_data)
       @partition_data = partition_data
@@ -111,22 +114,27 @@ module SqlPartitioner
     def self.to_log(partitions)
       return "none" if partitions.empty?
 
-      partition_info_attrs = partitions.first.attributes.keys
-
-      padding = partition_info_attrs.map do |attribute|
+      padding = TO_LOG_ATTRIBUTES_SORT_ORDER.map do |attribute|
                   max_length = partitions.map do |partition|
                     partition.send(attribute).to_s.length
                   end.max
                   [attribute.to_s.length, max_length].max + 3
                 end
-      header = partition_info_attrs.map.each_with_index do |attribute, index|
-                 attribute.to_s.ljust(padding[index])
-               end.join
+
+      header = []
+      TO_LOG_ATTRIBUTES_SORT_ORDER.map.each_with_index do |attribute, index|
+        header << attribute.to_s.ljust(padding[index])
+      end
+      header = header.join
+
       body = partitions.map do |partition|
-               partition_info_attrs.map.each_with_index do |attribute, index|
-                 partition.send(attribute).to_s.ljust(padding[index])
-               end.join
+               result = []
+               TO_LOG_ATTRIBUTES_SORT_ORDER.map.each_with_index do |attribute, index|
+                 result << partition.send(attribute).to_s.ljust(padding[index])
+               end
+               result.join
              end.join("\n")
+
       seperator = ''.ljust(padding.inject(&:+),'-')
 
       [seperator, header, seperator, body, seperator].join("\n")
