@@ -1,12 +1,10 @@
 require File.expand_path("../spec_helper", File.dirname(__FILE__))
 
-describe "PartitionsManager with ARAdapter" do
+shared_examples_for "PartitionsManager with an Adapter" do
   describe "#initialize_partitioning_in_intervals" do
     before(:each) do
-      @ar_adapter = SqlPartitioner::ARAdapter.new(ActiveRecord::Base.connection)
-
       @partition_manager = SqlPartitioner::PartitionsManager.new(
-        :adapter      => @ar_adapter,
+        :adapter      => adapter,
         :current_time => Time.utc(2014,04,18),
         :table_name   => 'test_events',
         :logger       => Logger.new(STDOUT)
@@ -17,7 +15,7 @@ describe "PartitionsManager with ARAdapter" do
 
       @partition_manager.initialize_partitioning_in_intervals(days_into_future)
 
-      SqlPartitioner::Partition.all(@ar_adapter, 'test_events').map{|p| [p.name, p.timestamp]}.should == [
+      SqlPartitioner::Partition.all(adapter, 'test_events').map{|p| [p.name, p.timestamp]}.should == [
         ["until_2014_05_18", Time.utc(2014,05,18).to_i],
         ["until_2014_06_18", Time.utc(2014,06,18).to_i],
         ["future", "MAXVALUE"]
@@ -26,10 +24,8 @@ describe "PartitionsManager with ARAdapter" do
   end
   describe "#append_partition_intervals" do
     before(:each) do
-      @ar_adapter = SqlPartitioner::ARAdapter.new(ActiveRecord::Base.connection)
-
       @partition_manager = SqlPartitioner::PartitionsManager.new(
-        :adapter      => @ar_adapter,
+        :adapter      => adapter,
         :current_time => Time.utc(2014,04,18),
         :table_name   => 'test_events',
         :logger       => Logger.new(STDOUT)
@@ -77,10 +73,8 @@ describe "PartitionsManager with ARAdapter" do
   end
   describe "#drop_partitions_older_than_in_days" do
     before(:each) do
-      @ar_adapter = SqlPartitioner::ARAdapter.new(ActiveRecord::Base.connection)
-
       @partition_manager = SqlPartitioner::PartitionsManager.new(
-        :adapter      => @ar_adapter,
+        :adapter      => adapter,
         :current_time => Time.utc(2014,04,18),
         :table_name   => 'test_events',
         :logger       => Logger.new(STDOUT)
@@ -94,7 +88,7 @@ describe "PartitionsManager with ARAdapter" do
       })
       @partition_manager.drop_partitions_older_than_in_days(days_from_now = 40)
 
-      SqlPartitioner::Partition.all(@ar_adapter, 'test_events').map{|p| [p.name, p.timestamp]}.should == [
+      SqlPartitioner::Partition.all(adapter, 'test_events').map{|p| [p.name, p.timestamp]}.should == [
         ["until_2014_03_18", Time.utc(2014,03,18).to_i],
         ["until_2014_04_18", Time.utc(2014,04,18).to_i],
         ["future", "MAXVALUE"]
@@ -104,10 +98,8 @@ describe "PartitionsManager with ARAdapter" do
 
   describe "#drop_partitions_older_than" do
     before(:each) do
-      @ar_adapter = SqlPartitioner::ARAdapter.new(ActiveRecord::Base.connection)
-
       @partition_manager = SqlPartitioner::PartitionsManager.new(
-        :adapter      => @ar_adapter,
+        :adapter      => adapter,
         :current_time => Time.utc(2014,04,18),
         :table_name   => 'test_events',
         :logger       => Logger.new(STDOUT)
@@ -136,6 +128,22 @@ describe "PartitionsManager with ARAdapter" do
           'until_2014_03_18'
         ]
       end
+    end
+  end
+end
+
+describe "PartitionsManager with ARAdapter" do
+  it_should_behave_like "PartitionsManager with an Adapter" do
+    let(:adapter) do
+      SqlPartitioner::ARAdapter.new(ActiveRecord::Base.connection)
+    end
+  end
+end
+
+describe "PartitionsManager with DMAdapter" do
+  it_should_behave_like "PartitionsManager with an Adapter" do
+    let(:adapter) do
+      SqlPartitioner::DMAdapter.new(DataMapper.repository.adapter)
     end
   end
 end
