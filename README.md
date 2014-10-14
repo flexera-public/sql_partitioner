@@ -1,6 +1,5 @@
 # SqlPartitioner
-[![Build Status](https://travis-ci.org/rightscale/sql_partitioner.png)](https://travis-ci.org/rightscale/sql_partitioner)
-
+"master" branch: [![Build Status](https://magnum.travis-ci.com/rightscale/sql_partitioner.svg?token=wpB1qKdxrdYwWz7BbTMx&branch=master)](https://magnum.travis-ci.com/rightscale/sql_partitioner)
 
 SQL Partitioner provides...
 
