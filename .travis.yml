@@ -3,3 +3,5 @@ rvm:
   - ree-1.8.7-2012.02
   - 2.1.2
 sudo: false  # makes build run in docker container, which starts faster than a VM
+script:
+  - bundle exec rspec
