@@ -68,7 +68,7 @@ shared_examples_for "LockWaitTimeoutHandler" do
               end
             end.should raise_error(sql_error_class, /Lock wait timeout exceeded/)
           ensure
-            adapter.execute("UNLOCK TABLES")
+            @adapter_2.execute("UNLOCK TABLES")
             step.should == 1
             step += 1
           end
