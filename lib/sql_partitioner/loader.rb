@@ -7,8 +7,7 @@ module SqlPartitioner
 
         true
       else
-        puts "{sql_partitioner} SKIPPING `require '#{path}'` because #{required_constant} is not defined."
-
+        # "No need to `require '#{path}'` since #{required_constant} is not defined at this point."
         false
       end
     end

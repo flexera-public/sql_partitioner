@@ -56,7 +56,6 @@ module SqlPartitioner
 
 
     def self.sort_partition_data(partition_data)
-      puts partition_data.inspect
       partition_data.to_a.sort do |x,y|
         if x[1] == "MAXVALUE"
           1

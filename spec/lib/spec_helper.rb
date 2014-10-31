@@ -28,7 +28,6 @@ RSpec.configure do |config|
 
     adapter,database,user,pass,host = db_conf["test"].values_at *%W(adapter database username password host)
     connection_string = "#{adapter}://#{user}:#{pass}@#{host}/#{database}"
-    puts "DB connection string: #{connection_string}"
     DataMapper.setup(:default, connection_string)
   end
 
