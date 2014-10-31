@@ -55,6 +55,8 @@ module SqlPartitioner
     end
 
 
+    # @param [Hash<String,Fixnum>] partition_data hash of name to timestamp
+    # @return [Array] array of partitions sorted by timestamp ascending, with the 'future' partition at the end
     def self.sort_partition_data(partition_data)
       partition_data.to_a.sort do |x,y|
         if x[1] == "MAXVALUE"
