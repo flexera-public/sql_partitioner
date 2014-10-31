@@ -6,7 +6,7 @@ shared_examples_for "PartitionCollection" do
       :adapter      => adapter,
       :current_time => Time.utc(2014,04,18),
       :table_name   => 'test_events',
-      :logger       => Logger.new(STDOUT)
+      :logger       => SPEC_LOGGER
     )
   end
   describe "#current_partition" do
@@ -35,7 +35,7 @@ shared_examples_for "PartitionCollection" do
         :adapter      => adapter,
         :current_time => Time.utc(2014,04,18),
         :table_name   => 'test_events',
-        :logger       => Logger.new(STDOUT)
+        :logger       => SPEC_LOGGER
       )
 
       @partitions = {'until_2014_03_17' => 1395014400, 'until_2014_04_17' => 1397692800}
@@ -65,7 +65,7 @@ shared_examples_for "PartitionCollection" do
         :adapter      => adapter,
         :current_time => Time.utc(2014,04,18),
         :table_name   => 'test_events',
-        :logger       => Logger.new(STDOUT)
+        :logger       => SPEC_LOGGER
       )
 
       @partitions = {'until_2014_03_17' => 1395014400}
@@ -85,7 +85,7 @@ shared_examples_for "PartitionCollection" do
         :adapter      => adapter,
         :current_time => Time.utc(2014,04,18),
         :table_name   => 'test_events',
-        :logger       => Logger.new(STDOUT)
+        :logger       => SPEC_LOGGER
       )
     end
 
@@ -120,7 +120,7 @@ shared_examples_for "PartitionCollection" do
         :adapter      => adapter,
         :current_time => Time.utc(2014,04,18),
         :table_name   => 'test_events',
-        :logger       => Logger.new(STDOUT)
+        :logger       => SPEC_LOGGER
       )
     end
 
@@ -147,7 +147,7 @@ shared_examples_for "Partition" do
       :adapter      => adapter,
       :current_time => Time.utc(2014,04,18),
       :table_name   => 'test_events',
-      :logger       => Logger.new(STDOUT)
+      :logger       => SPEC_LOGGER
     )
   end
   describe ".all" do

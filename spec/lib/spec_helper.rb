@@ -10,6 +10,8 @@ require 'logger'
 
 #require 'ruby-debug' # enable debugger support
 
+SPEC_LOGGER = Logger.new(nil)
+
 RSpec.configure do |config|
   # enable both should and expect syntax in rspec without deprecation warnings
   config.expect_with :rspec do |c|

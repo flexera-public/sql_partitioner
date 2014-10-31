@@ -7,7 +7,7 @@ shared_examples_for "BasePartitionsManager with an adapter" do
         :adapter      => adapter,
         :current_time => Time.utc(2014,04,18),
         :table_name   => 'test_events',
-        :logger       => Logger.new(STDOUT)
+        :logger       => SPEC_LOGGER
       )
     end
 
@@ -37,7 +37,7 @@ shared_examples_for "BasePartitionsManager with an adapter" do
         :adapter      => adapter,
         :current_time => Time.utc(2014,04,18),
         :table_name   => 'test_events',
-        :logger       => Logger.new(STDOUT)
+        :logger       => SPEC_LOGGER
       )
     end
 
@@ -60,7 +60,7 @@ shared_examples_for "BasePartitionsManager with an adapter" do
         :adapter      => adapter,
         :current_time => Time.utc(2014,04,18),
         :table_name   => 'test_events',
-        :logger       => Logger.new(STDOUT)
+        :logger       => SPEC_LOGGER
       )
     end
     context "with no sql statement to be executed" do
@@ -97,7 +97,7 @@ shared_examples_for "BasePartitionsManager with an adapter" do
         :adapter      => adapter,
         :current_time => Time.utc(2014,04,16),
         :table_name   => 'test_events',
-        :logger       => Logger.new(STDOUT)
+        :logger       => SPEC_LOGGER
       )
 
       @partitions = {'until_2014_03_17' => 1395014400, 'until_2014_04_17' => 1397692800}
@@ -154,7 +154,7 @@ shared_examples_for "BasePartitionsManager with an adapter" do
         :adapter      => adapter,
         :current_time => Time.utc(2014,04,16),
         :table_name   => 'test_events',
-        :logger       => Logger.new(STDOUT)
+        :logger       => SPEC_LOGGER
       )
 
       @partitions = {'until_2014_03_17' => 1395014400, 'until_2014_04_17' => 1397692800}
@@ -215,7 +215,7 @@ describe "BasePartitionsManager with ARAdapter" do
         :adapter      => SqlPartitioner::ARAdapter.new(ActiveRecord::Base.connection),
         :current_time => Time.utc(2014,04,18),
         :table_name   => 'test_events',
-        :logger       => Logger.new(STDOUT)
+        :logger       => SPEC_LOGGER
       }
       @sql_statement = "SELECT @@local.lock_wait_timeout AS lock_wait_timeout"
     end
@@ -262,7 +262,7 @@ describe "BasePartitionsManager" do
       :adapter      => @adapter,
       :current_time => Time.utc(2014,04,18),
       :table_name   => 'test_events',
-      :logger       => Logger.new(STDOUT)
+      :logger       => SPEC_LOGGER
     )
   end
 

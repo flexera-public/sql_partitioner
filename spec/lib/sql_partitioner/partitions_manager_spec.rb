@@ -7,7 +7,7 @@ shared_examples_for "PartitionsManager with an Adapter" do
         :adapter      => adapter,
         :current_time => Time.utc(2014,04,18),
         :table_name   => 'test_events',
-        :logger       => Logger.new(STDOUT)
+        :logger       => SPEC_LOGGER
       )
     end
     it "should initialize the database table as requested" do
@@ -28,7 +28,7 @@ shared_examples_for "PartitionsManager with an Adapter" do
         :adapter      => adapter,
         :current_time => Time.utc(2014,04,18),
         :table_name   => 'test_events',
-        :logger       => Logger.new(STDOUT)
+        :logger       => SPEC_LOGGER
       )
     end
     context "with an unpartitioned database table" do
@@ -77,7 +77,7 @@ shared_examples_for "PartitionsManager with an Adapter" do
         :adapter      => adapter,
         :current_time => Time.utc(2014,04,18),
         :table_name   => 'test_events',
-        :logger       => Logger.new(STDOUT)
+        :logger       => SPEC_LOGGER
       )
     end
     it "should drop the requested partition" do
@@ -102,7 +102,7 @@ shared_examples_for "PartitionsManager with an Adapter" do
         :adapter      => adapter,
         :current_time => Time.utc(2014,04,18),
         :table_name   => 'test_events',
-        :logger       => Logger.new(STDOUT)
+        :logger       => SPEC_LOGGER
       )
     end
     context "with no partition requested to be dropped" do
@@ -156,7 +156,7 @@ describe "PartitionsManager" do
       :adapter      => @adapter,
       :current_time => Time.utc(2014,01,01),
       :table_name   => 'test_events',
-      :logger       => Logger.new(STDOUT)
+      :logger       => SPEC_LOGGER
     )
   end
 
