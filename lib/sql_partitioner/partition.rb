@@ -1,4 +1,6 @@
 module SqlPartitioner
+
+  # Represents an array of `Partition` objects, with some extra helper methods.
   class PartitionCollection < Array
 
     # selects all partitions that hold records older than the timestamp provided
@@ -46,6 +48,7 @@ module SqlPartitioner
     end
   end
 
+  # Represents information for a single partition in the database
   class Partition
     FUTURE_PARTITION_NAME  = 'future'
     FUTURE_PARTITION_VALUE = 'MAXVALUE'
@@ -53,10 +56,14 @@ module SqlPartitioner
       :ordinal_position, :name, :timestamp, :table_rows, :data_length, :index_length
     ]
 
+    # Likely only called by `Partition.all`
     def initialize(partition_data)
       @partition_data = partition_data
     end
 
+    # Fetches info on all partitions for the given `table_name`, using the given `adapter`.
+    # @param [BaseAdapter] adapter
+    # @param [String] table_name
     # @return [PartitionCollection]
     def self.all(adapter, table_name)
       select_sql = SqlPartitioner::SQL.partition_info
@@ -68,14 +75,17 @@ module SqlPartitioner
       partition_collection
     end
 
+    # @return [Fixnum]
     def ordinal_position
       @partition_data.partition_ordinal_position
     end
 
+    # @return [String]
     def name
       @partition_data.partition_name
     end
 
+    # @return [Fixnum,String] only a string for "future" partition
     def timestamp
       if @partition_data.partition_description == FUTURE_PARTITION_VALUE
         FUTURE_PARTITION_VALUE
@@ -84,22 +94,27 @@ module SqlPartitioner
       end
     end
 
+    # @return [Fixnum]
     def table_rows
       @partition_data.table_rows
     end
 
+    # @return [Fixnum]
     def data_length
       @partition_data.data_length
     end
 
+    # @return [Fixnum]
     def index_length
       @partition_data.index_length
     end
 
+    # @return [Boolean]
     def future_partition?
       self.timestamp == FUTURE_PARTITION_VALUE
     end
 
+    # @return [Hash]
     def attributes
       {
         :ordinal_position  => ordinal_position,
