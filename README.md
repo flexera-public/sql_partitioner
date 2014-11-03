@@ -85,6 +85,7 @@ Pull requests welcome.
 
 - [Dominic Metzger](https://github.com/dominicm)
 - [Sumner McCarty](https://github.com/sumner-mccarty)
+- [Prakash Selvaraj](https://github.com/PrakashSelvaraj)
 - [Jim Slattery](https://github.com/jim-slattery-rs)
 
 ## License
