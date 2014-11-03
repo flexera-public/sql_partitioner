@@ -6,58 +6,69 @@ shared_examples_for "PartitionCollection" do
       :adapter      => adapter,
       :current_time => Time.utc(2014,04,18),
       :table_name   => 'test_events',
-      :logger       => Logger.new(STDOUT)
+      :logger       => SPEC_LOGGER
     )
   end
-  describe "#current_partition" do
+
+  context "with some partitions" do
     before(:each) do
-      @partitions = {'until_2014_03_17' => 1395014400}
-      @partition_manager.initialize_partitioning(@partitions)
-    end
-
-    it "should return nil when timestamp > partition.timestamp" do
-      existing_partition_ts = SqlPartitioner::SQL.sort_partition_data(@partitions).first[1]
-      SqlPartitioner::Partition.all(adapter, 'test_events').current_partition(existing_partition_ts + 1).should == nil
-    end
-    it "should return nil when timestamp == partition.timestamp" do
-      existing_partition_ts = SqlPartitioner::SQL.sort_partition_data(@partitions).first[1]
-      SqlPartitioner::Partition.all(adapter, 'test_events').current_partition(existing_partition_ts).should == nil
-    end
-    it "should return the partition when timestamp < partition.timestamp" do
-      existing_partition_ts = SqlPartitioner::SQL.sort_partition_data(@partitions).first[1]
-      SqlPartitioner::Partition.all(adapter, 'test_events').current_partition(existing_partition_ts - 1).name.should == @partitions.keys.first
-    end
-  end
-
-  describe "#older_than_timestamp" do
-    before(:each) do
-      @partition_manager = SqlPartitioner::BasePartitionsManager.new(
-        :adapter      => adapter,
-        :current_time => Time.utc(2014,04,18),
-        :table_name   => 'test_events',
-        :logger       => Logger.new(STDOUT)
-      )
-
       @partitions = {'until_2014_03_17' => 1395014400, 'until_2014_04_17' => 1397692800}
+      @sorted = SqlPartitioner::SQL.sort_partition_data(@partitions)
+      @newest_partition_ts = @sorted.last[1]
+      @oldest_partition_ts = @sorted.first[1]
       @partition_manager.initialize_partitioning(@partitions)
+      @all_partitions = SqlPartitioner::Partition.all(adapter, 'test_events')
     end
 
-    it "should return nil when timestamp < oldest partition.timestamp" do
-      existing_partition_ts = SqlPartitioner::SQL.sort_partition_data(@partitions).first[1]
-      SqlPartitioner::Partition.all(adapter, 'test_events').older_than_timestamp(existing_partition_ts - 1).should == []
+    describe "#current_partition" do
+      it "should return nil when timestamp > newest partition.timestamp" do
+        @all_partitions.current_partition(@newest_partition_ts + 1).should == nil
+      end
+      it "should return nil when timestamp == newest partition.timestamp" do
+        @all_partitions.current_partition(@newest_partition_ts).should == nil
+      end
+      it "should return the newest partition when timestamp < newest partition.timestamp" do
+        @all_partitions.current_partition(@newest_partition_ts - 1).name.should == @sorted.last[0]
+      end
+      it "should return the oldest partition when timestamp < oldest partition.timestamp" do
+        @all_partitions.current_partition(@oldest_partition_ts - 1).name.should == @sorted.first[0]
+      end
     end
-    it "should return nil when timestamp == partition.timestamp" do
-      existing_partition_ts = SqlPartitioner::SQL.sort_partition_data(@partitions).first[1]
-      SqlPartitioner::Partition.all(adapter, 'test_events').older_than_timestamp(existing_partition_ts).should == []
+
+    describe "#older_than_timestamp" do
+      it "should return nil when timestamp < oldest partition.timestamp" do
+        @all_partitions.older_than_timestamp(@oldest_partition_ts - 1).should == []
+      end
+      it "should return nil when timestamp == partition.timestamp" do
+        @all_partitions.older_than_timestamp(@oldest_partition_ts).should == []
+      end
+      it "should return the partition when timestamp > newest partition timestamp" do
+        @all_partitions.older_than_timestamp(@newest_partition_ts + 1).map{|p| [p.name, p.timestamp]}.should == [
+          ['until_2014_03_17', 1395014400],
+          ['until_2014_04_17', 1397692800],
+        ]
+      end
     end
-    it "should return the partition when timestamp < partition.timestamp" do
-      existing_partition_ts = SqlPartitioner::SQL.sort_partition_data(@partitions).last[1]
-      SqlPartitioner::Partition.all(adapter, 'test_events').older_than_timestamp(existing_partition_ts + 1).map{|p| [p.name, p.timestamp]}.should == [
-        ['until_2014_03_17', 1395014400],
-        ['until_2014_04_17', 1397692800],
-      ]
+
+    describe "#newer_than_timestamp" do
+      it "should return nil when timestamp > newest partition.timestamp" do
+        @all_partitions.newer_than_timestamp(@newest_partition_ts + 1).should == []
+      end
+      it "should return the newest partition when timestamp == partition.timestamp" do
+        @all_partitions.newer_than_timestamp(@newest_partition_ts).map{|p| [p.name, p.timestamp]}.should == [
+            ['until_2014_04_17', 1397692800]
+        ]
+      end
+      it "should return all the partition when timestamp < oldest partition timestamp" do
+        @all_partitions.newer_than_timestamp(@oldest_partition_ts - 1).map{|p| [p.name, p.timestamp]}.should == [
+            ['until_2014_03_17', 1395014400],
+            ['until_2014_04_17', 1397692800],
+        ]
+      end
     end
+
   end
+
 
   describe "#non_future_partitions" do
     before(:each) do
@@ -65,7 +76,7 @@ shared_examples_for "PartitionCollection" do
         :adapter      => adapter,
         :current_time => Time.utc(2014,04,18),
         :table_name   => 'test_events',
-        :logger       => Logger.new(STDOUT)
+        :logger       => SPEC_LOGGER
       )
 
       @partitions = {'until_2014_03_17' => 1395014400}
@@ -85,7 +96,7 @@ shared_examples_for "PartitionCollection" do
         :adapter      => adapter,
         :current_time => Time.utc(2014,04,18),
         :table_name   => 'test_events',
-        :logger       => Logger.new(STDOUT)
+        :logger       => SPEC_LOGGER
       )
     end
 
@@ -120,7 +131,7 @@ shared_examples_for "PartitionCollection" do
         :adapter      => adapter,
         :current_time => Time.utc(2014,04,18),
         :table_name   => 'test_events',
-        :logger       => Logger.new(STDOUT)
+        :logger       => SPEC_LOGGER
       )
     end
 
@@ -147,7 +158,7 @@ shared_examples_for "Partition" do
       :adapter      => adapter,
       :current_time => Time.utc(2014,04,18),
       :table_name   => 'test_events',
-      :logger       => Logger.new(STDOUT)
+      :logger       => SPEC_LOGGER
     )
   end
   describe ".all" do

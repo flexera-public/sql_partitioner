@@ -76,6 +76,16 @@ describe "TimeUnitConverter" do
       SqlPartitioner::TimeUnitConverter.time_units_per_second(:micro_seconds).should == 1_000_000
       SqlPartitioner::TimeUnitConverter.time_units_per_second(:seconds).should == 1
     end
+    it "all SUPPORTED_TIME_UNITS accounted for" do
+      SqlPartitioner::TimeUnitConverter::SUPPORTED_TIME_UNITS.each do |u|
+        SqlPartitioner::TimeUnitConverter.time_units_per_second(u).should be_a(Fixnum)
+      end
+    end
+    it "unknown time unit should raise an error" do
+      lambda {
+        SqlPartitioner::TimeUnitConverter.time_units_per_second(:bogus)
+      }.should raise_error(RuntimeError, /unknown time_unit :bogus/)
+    end
   end
   
 end

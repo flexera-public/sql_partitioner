@@ -7,6 +7,20 @@ module SqlPartitioner
 
     FUTURE_PARTITION_VALUE = 'MAXVALUE'
 
+    # @param [{Symbol=>Object}] options
+    # @options options [SqlPartitioner::BaseAdapter] :adapter for DB communication
+    # @options options [String] :table_name target table for the partition management operations
+    # @options options [Symbol] :time_unit to use for the table's `timestamp` column, defaults to :seconds
+    # @options options [Fixnum] :current_time unix epoch in seconds
+    # @options options [Logger] :logger
+    # @options options [Fixnum] :lock_wait_timeout (in seconds) Each SQL statement will be executed with `@@local.lock_wait_timeout`
+    #  having been temporarily set to this value.
+    #  Background: Any partitioning statement must acquire a table lock on the partitioned table,
+    #  and while it is waiting to acquire this lock, any subsequent queries on that table will be blocked and have to wait.
+    #  It may take a long time to acquire a table lock if there were already long-running queries in progress.
+    #  Therefore, setting a short timeout (e.g. 1 second) ensures the partitioning statement will timeout quickly,
+    #  so any other SQL operations on that table will not be delayed.
+    #  If the partitioning command times-out, it will have to be retried later.
     def initialize(options = {})
       @adapter            = options[:adapter]
       @tuc                = TimeUnitConverter.new(options[:time_unit] || :seconds)
@@ -17,93 +31,6 @@ module SqlPartitioner
       @lock_wait_timeout  = options[:lock_wait_timeout]
     end
 
-    #----------- Validation Helpers ---------------
-
-    def _validate_positive_fixnum(parameter_name, parameter)
-      _validate_class(parameter_name, parameter, Fixnum)
-
-      if parameter <= 0
-        _raise_arg_err "#{parameter_name} should be > 0"
-      end
-      true
-    end
-    private :_validate_positive_fixnum
-
-    def _validate_class(parameter_name, parameter, expected_class)
-      if !parameter.kind_of?(expected_class)
-        _raise_arg_err("class of #{parameter_name} expected to be #{expected_class} but instead was #{parameter.class}")
-      end
-      true
-    end
-    private :_validate_class
-
-
-    def _validate_timestamp(timestamp)
-      return true if timestamp == FUTURE_PARTITION_VALUE
-
-      _validate_positive_fixnum(:timestamp, timestamp)
-
-      true
-    end
-    private :_validate_timestamp
-
-    def _validate_partition_name(partition_name)
-      _validate_class('partition_name', partition_name, String)
-    end
-    private :_validate_partition_name
-
-    def _validate_partition_names(partition_names)
-      _validate_class('partition_names', partition_names, Array)
-
-      partition_names.each do |name|
-        _validate_partition_name(name)
-      end
-
-      true
-    end
-    private :_validate_partition_names
-
-    def _validate_partition_names_allowed_to_drop(partition_names)
-      black_listed_partitions = [FUTURE_PARTITION_NAME]
-
-      if active_partition = Partition.all(adapter, table_name).current_partition(self.current_timestamp)
-        black_listed_partitions << active_partition.name
-      end
-
-      if (partition_names & black_listed_partitions).any?
-       _raise_arg_err "current and future partition can never be dropped"
-      end
-
-      true
-    end
-    private :_validate_partition_names_allowed_to_drop
-
-    def _validate_drop_partitions_names(partition_names)
-      _validate_partition_names(partition_names)
-      _validate_partition_names_allowed_to_drop(partition_names)
-
-      true
-    end
-    private :_validate_drop_partitions_names
-
-    def _validate_partition_data(partition_data)
-      _validate_class('partition_data', partition_data, Hash)
-
-      partition_data.each_pair do |key, value|
-        _validate_partition_name(key)
-        _validate_timestamp(value)
-
-        if key == FUTURE_PARTITION_NAME && value != FUTURE_PARTITION_VALUE ||
-           key != FUTURE_PARTITION_NAME && value == FUTURE_PARTITION_VALUE
-          _raise_arg_err "future partition name '#{FUTURE_PARTITION_NAME}' must use timestamp '#{FUTURE_PARTITION_VALUE}',"\
-                         "but got name #{key} and timestamp #{value}"
-        end
-      end
-
-      true      
-    end
-    private :_validate_partition_data
-
     # initialize partitioning on the given table based on partition_data
     # provided.
     # partition data should be of form
@@ -113,8 +40,8 @@ module SqlPartitioner
     #   {'until_2014_03_17' => 1395077901193149,
     #    'until_2014_04_01' => 1396373901193398}
     #
-    # @param [Hash] partition_data
-    # @param [Boolean] dry_run, Defaults to false. If true, query wont be executed.
+    # @param [Hash<String,Fixnum>] partition_data of form { partition_name1 => timestamp1..}
+    # @param [Boolean] dry_run Defaults to false. If true, query wont be executed.
     # @raise [ArgumentError] if partition data is not hash or if one of name id
     #                    is not a String or if one of the value is not
     #                    Integer
@@ -128,7 +55,7 @@ module SqlPartitioner
     end
 
     # Drop partitions by name
-    # @param [Array] partition_names array of partition_names in String
+    # @param [Array<String>] partition_names array of String partition_names
     # @param [Boolean] dry_run Defaults to false. If true, query wont be executed.
     # @return [String] drop sql if dry run is true
     # @raise [ArgumentError] if input is not an Array or if partition name is
@@ -142,7 +69,7 @@ module SqlPartitioner
 
     # Reorgs future partition into partitions provided as input.
     #
-    # @param [Hash] partition_data of form { partition_name1 => timestamp1..}
+    # @param [Hash<String,Fixnum>] partition_data of form { partition_name1 => timestamp1..}
     # @param [Boolean] dry_run Defaults to false. If true, query wont be executed.
     # @return [Boolean] true if not dry run and query is executed else false
     # @return [String] sql if dry_run is true
@@ -180,6 +107,89 @@ module SqlPartitioner
       end
     end
 
+
+    #----------------
+    private # methods
+    #----------------
+
+    #----------- Validation Helpers ---------------
+
+    def _validate_positive_fixnum(parameter_name, parameter)
+      _validate_class(parameter_name, parameter, Fixnum)
+
+      if parameter <= 0
+        _raise_arg_err "#{parameter_name} should be > 0"
+      end
+      true
+    end
+
+    def _validate_class(parameter_name, parameter, expected_class)
+      if !parameter.kind_of?(expected_class)
+        _raise_arg_err("class of #{parameter_name} expected to be #{expected_class} but instead was #{parameter.class}")
+      end
+      true
+    end
+
+    def _validate_timestamp(timestamp)
+      return true if timestamp == FUTURE_PARTITION_VALUE
+
+      _validate_positive_fixnum(:timestamp, timestamp)
+
+      true
+    end
+
+    def _validate_partition_name(partition_name)
+      _validate_class('partition_name', partition_name, String)
+    end
+
+    def _validate_partition_names(partition_names)
+      _validate_class('partition_names', partition_names, Array)
+
+      partition_names.each do |name|
+        _validate_partition_name(name)
+      end
+
+      true
+    end
+
+    def _validate_partition_names_allowed_to_drop(partition_names)
+      black_listed_partitions = [FUTURE_PARTITION_NAME]
+
+      if active_partition = Partition.all(adapter, table_name).current_partition(self.current_timestamp)
+        black_listed_partitions << active_partition.name
+      end
+
+      if (partition_names & black_listed_partitions).any?
+        _raise_arg_err "current and future partition can never be dropped"
+      end
+
+      true
+    end
+
+    def _validate_drop_partitions_names(partition_names)
+      _validate_partition_names(partition_names)
+      _validate_partition_names_allowed_to_drop(partition_names)
+
+      true
+    end
+
+    def _validate_partition_data(partition_data)
+      _validate_class('partition_data', partition_data, Hash)
+
+      partition_data.each_pair do |key, value|
+        _validate_partition_name(key)
+        _validate_timestamp(value)
+
+        if key == FUTURE_PARTITION_NAME && value != FUTURE_PARTITION_VALUE ||
+            key != FUTURE_PARTITION_NAME && value == FUTURE_PARTITION_VALUE
+          _raise_arg_err "future partition name '#{FUTURE_PARTITION_NAME}' must use timestamp '#{FUTURE_PARTITION_VALUE}',"\
+                         "but got name #{key} and timestamp #{value}"
+        end
+      end
+
+      true
+    end
+
     # executes the sql
     # @param [String] sql to be executed
     # @return [Boolean] true
@@ -192,7 +202,6 @@ module SqlPartitioner
         adapter.execute(sql)
       end
     end
-    private :_execute
 
     # executes the sql and then displays the partition info
     # @param [String] sql to be executed
@@ -213,13 +222,10 @@ module SqlPartitioner
         false
       end
     end
-    private :_execute_and_display_partition_info
-
 
     def _raise_arg_err(err_message)
       raise ArgumentError.new err_message
     end
-    private :_raise_arg_err
 
   end
 end

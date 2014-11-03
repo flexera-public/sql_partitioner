@@ -15,6 +15,7 @@ module SqlPartitioner
       @time_unit = time_unit
     end
 
+    # @param [Fixnum] num_days
     # @return [Fixnum] number of days represented in the configure time units
     def from_days(num_days)
       from_seconds(num_days * DAY_AS_SECONDS)
@@ -44,6 +45,7 @@ module SqlPartitioner
       time_units_timestamp / time_units_per_second
     end
 
+    # @return [Fixnum] how many of the configured time_unit are in 1 second
     def time_units_per_second
       self.class.time_units_per_second(@time_unit)
     end
@@ -59,8 +61,8 @@ module SqlPartitioner
       from_seconds(date_time.to_time.to_i)
     end
 
-    # @param [DateTime] date_time
-    # @param [Symbol] calendar_unit unit for the given value, one of [:day(s), :month(s)]
+    # @param [DateTime] date_time to advance
+    # @param [Symbol] calendar_unit unit for the following `value`, one of [:day(s), :month(s)]
     # @param [Fixnum] value in terms of calendar_unit to add to the date_time
     # @return [DateTime] result of advancing the given date_time by the given value
     def self.advance_date_time(date_time, calendar_unit, value)
@@ -74,13 +76,16 @@ module SqlPartitioner
       new_time
     end
 
-    # @param [Symbol] time_unit one of SUPPORTED_TIME_UNITS
+    # @param [Symbol] time_unit one of `SUPPORTED_TIME_UNITS`
     # @return [Fixnum] how many of the given time_unit are in 1 second
     def self.time_units_per_second(time_unit)
-      if time_unit == :micro_seconds
-        multiplier = 1_000_000
+      case time_unit
+      when :micro_seconds
+        1_000_000
+      when :seconds
+        1
       else
-        multiplier = 1
+        raise "unknown time_unit #{time_unit.inspect}"
       end
     end
   end

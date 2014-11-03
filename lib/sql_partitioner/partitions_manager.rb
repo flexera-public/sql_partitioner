@@ -1,4 +1,5 @@
 module SqlPartitioner
+  # Performs partitioning operations against a table.
   class PartitionsManager < BasePartitionsManager
     VALID_PARTITION_SIZE_UNITS = [:months, :days]
 

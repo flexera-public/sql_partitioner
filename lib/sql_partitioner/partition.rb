@@ -1,48 +1,54 @@
 module SqlPartitioner
+
+  # Represents an array of `Partition` objects, with some extra helper methods.
   class PartitionCollection < Array
 
-    # fetch all partitions from information schema or input that hold records
-    # older than the timestamp provided
-    #
+    # selects all partitions that hold records older than the timestamp provided
     # @param [Fixnum] timestamp
-    # @param [Array] partition_info Array of partition info structs. if nil
-    #                partition info is fetched from db
-    # @return [Array] Array of partition name(String) that hold data older
-    #                 than given timestamp
+    # @return [Array<Partition>] partitions that hold data older than given timestamp
     def older_than_timestamp(timestamp)
       non_future_partitions.select do |p|
         timestamp > p.timestamp
       end
     end
 
-    #fetch the partition which is currently active. i.e  holds the records
-    # generated now
+    # selects all partitions that hold records newer than the timestamp provided
+    # @param [Fixnum] timestamp
+    # @return [Array<Partition>] partitions that hold data newer than given timestamp
+    def newer_than_timestamp(timestamp)
+      non_future_partitions.select do |p|
+        timestamp <= p.timestamp
+      end
+    end
+
+    # fetch the partition which is currently active. i.e. holds the records generated now
+    # @param [Fixnum] current_timestamp
+    # @return [Partition,NilClass]
     def current_partition(current_timestamp)
       non_future_partitions.select do |p|
         p.timestamp > current_timestamp
       end.min_by { |p| p.timestamp }
     end
 
-    # get all partitions that does not have timestamp as 'FUTURE_PARTITION_VALUE'
+    # @return [Array<Partition>] all partitions that do not have timestamp as `FUTURE_PARTITION_VALUE`
     def non_future_partitions
       self.reject { |p| p.future_partition? }
     end
 
-    # fetch the latest partition that is not a future partition i.e.(value
-    #  is not FUTURE_PARTITION_VALUE)
-    # @param [Array] partition_info Array of partition info structs. if nil
-    #                partition info is fetched from db
-    # @return [Struct or NilClass] partition with maximum timestamp value
+    # fetch the latest partition that is not a future partition i.e. (value
+    #  is not `FUTURE_PARTITION_VALUE`)
+    # @return [Partition,NilClass] partition with maximum timestamp value
     def latest_partition
       non_future_partitions.max_by{ |p| p.timestamp }
     end
 
-    #fetch the partition with oldest timestamp
+    # @return [Partition,NilClass] the partition with oldest timestamp
     def oldest_partition
       non_future_partitions.min_by { |p| p.timestamp }
     end
   end
 
+  # Represents information for a single partition in the database
   class Partition
     FUTURE_PARTITION_NAME  = 'future'
     FUTURE_PARTITION_VALUE = 'MAXVALUE'
@@ -50,10 +56,14 @@ module SqlPartitioner
       :ordinal_position, :name, :timestamp, :table_rows, :data_length, :index_length
     ]
 
+    # Likely only called by `Partition.all`
     def initialize(partition_data)
       @partition_data = partition_data
     end
 
+    # Fetches info on all partitions for the given `table_name`, using the given `adapter`.
+    # @param [BaseAdapter] adapter
+    # @param [String] table_name
     # @return [PartitionCollection]
     def self.all(adapter, table_name)
       select_sql = SqlPartitioner::SQL.partition_info
@@ -65,14 +75,17 @@ module SqlPartitioner
       partition_collection
     end
 
+    # @return [Fixnum]
     def ordinal_position
       @partition_data.partition_ordinal_position
     end
 
+    # @return [String]
     def name
       @partition_data.partition_name
     end
 
+    # @return [Fixnum,String] only a string for "future" partition
     def timestamp
       if @partition_data.partition_description == FUTURE_PARTITION_VALUE
         FUTURE_PARTITION_VALUE
@@ -81,22 +94,27 @@ module SqlPartitioner
       end
     end
 
+    # @return [Fixnum]
     def table_rows
       @partition_data.table_rows
     end
 
+    # @return [Fixnum]
     def data_length
       @partition_data.data_length
     end
 
+    # @return [Fixnum]
     def index_length
       @partition_data.index_length
     end
 
+    # @return [Boolean]
     def future_partition?
       self.timestamp == FUTURE_PARTITION_VALUE
     end
 
+    # @return [Hash]
     def attributes
       {
         :ordinal_position  => ordinal_position,
@@ -122,8 +140,8 @@ module SqlPartitioner
                 end
 
       header = TO_LOG_ATTRIBUTES_SORT_ORDER.each_with_index.map do |attribute, index|
-        attribute.to_s.ljust(padding[index])
-      end.join
+                  attribute.to_s.ljust(padding[index])
+                end.join
 
       body = partitions.map do |partition|
                TO_LOG_ATTRIBUTES_SORT_ORDER.each_with_index.map do |attribute, index|
@@ -131,9 +149,9 @@ module SqlPartitioner
                end.join
              end.join("\n")
 
-      seperator = ''.ljust(padding.inject(&:+),'-')
+      separator = ''.ljust(padding.inject(&:+),'-')
 
-      [seperator, header, seperator, body, seperator].join("\n")
+      [separator, header, separator, body, separator].join("\n")
     end
 
   end
