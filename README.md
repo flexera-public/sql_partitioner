@@ -3,7 +3,7 @@
 
 SqlPartitioner provides a `PartitionManager` class to help maintain partitioned tables in MySQL.
 If you have a table that is partitioned based on a timestamp, you will likely need to regularly add new partitions 
-into the future as well as remove older partitions to free up space.
+into the future as well as remove older partitions to free up space. This gem will help.
 
 ## Getting Started
 You'll need to `require 'sql_partitioner'`.
@@ -20,7 +20,7 @@ partition_manager = SqlPartitioner::PartitionsManager.new(
 )
 ```
 
-If you are instead using `ActiveRecord`, you might supply the following for `:adapter`:
+If you are using `ActiveRecord`, you can instead supply the following for `:adapter`:
 ```ruby
 SqlPartitioner::ARAdapter.new(ActiveRecord::Base.connection)
 ```
@@ -81,7 +81,11 @@ Tested with Ruby 1.8.7 and 2.1.2.
 ## Contributing
 Pull requests welcome.
 
-Maintained by the RightScale "Cornsilk_team"
+## Maintained by
+
+- [Dominic Metzger](https://github.com/dominicm)
+- [Sumner McCarty](https://github.com/sumner-mccarty)
+- [Jim Slattery](https://github.com/jim-slattery-rs)
 
 ## License
 MIT License, see [LICENSE](LICENSE)
