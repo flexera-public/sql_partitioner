@@ -1,4 +1,12 @@
-## 0.5.0
+## 0.6.0 (2014-11-03)
+
+Features:
+
+  - Filled out README
+  - Added and improved YARD docs
+  - Improved specs
+
+## 0.5.0 (2014-10-14)
 
 Features:
 
@@ -9,7 +17,7 @@ Bugfixes:
 
   - in Ruby 1.8.7 fixed `SqlPartitioner::Partition#to_log` output 
 
-## 0.4.0 / 2014-10-02
+## 0.4.0 (2014-10-02)
 
 Features:
 
