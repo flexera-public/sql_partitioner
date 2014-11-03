@@ -188,7 +188,6 @@ module SqlPartitioner
         adapter.execute(sql)
       end
     end
-    private :_execute
 
     # executes the sql and then displays the partition info
     # @param [String] sql to be executed
@@ -209,13 +208,10 @@ module SqlPartitioner
         false
       end
     end
-    private :_execute_and_display_partition_info
-
 
     def _raise_arg_err(err_message)
       raise ArgumentError.new err_message
     end
-    private :_raise_arg_err
 
   end
 end

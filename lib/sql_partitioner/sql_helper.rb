@@ -1,8 +1,34 @@
 module SqlPartitioner
   class SQL
 
+    # SQL query will return rows having the following columns:
+    #   - TABLE_CATALOG
+    #   - TABLE_SCHEMA
+    #   - TABLE_NAME
+    #   - PARTITION_NAME
+    #   - SUBPARTITION_NAME
+    #   - PARTITION_ORDINAL_POSITION
+    #   - SUBPARTITION_ORDINAL_POSITION
+    #   - PARTITION_METHOD
+    #   - SUBPARTITION_METHOD
+    #   - PARTITION_EXPRESSION
+    #   - SUBPARTITION_EXPRESSION
+    #   - PARTITION_DESCRIPTION
+    #   - TABLE_ROWS
+    #   - AVG_ROW_LENGTH
+    #   - DATA_LENGTH
+    #   - MAX_DATA_LENGTH
+    #   - INDEX_LENGTH
+    #   - DATA_FREE
+    #   - CREATE_TIME
+    #   - UPDATE_TIME
+    #   - CHECK_TIME
+    #   - CHECKSUM
+    #   - PARTITION_COMMENT
+    #   - NODEGROUP
+    #   - TABLESPACE_NAME
     def self.partition_info
-      SqlPartitioner::SQL.compress_lines(<<-SQL)
+      compress_lines(<<-SQL)
         SELECT  *
         FROM information_schema.PARTITIONS
         WHERE TABLE_SCHEMA = ?
@@ -13,14 +39,14 @@ module SqlPartitioner
     def self.drop_partitions(table_name, partition_names)
       return nil if partition_names.empty?
 
-      SqlPartitioner::SQL.compress_lines(<<-SQL)
+      compress_lines(<<-SQL)
         ALTER TABLE #{table_name}
         DROP PARTITION #{partition_names.join(',')}
       SQL
     end
 
     def self.create_partition(table_name, partition_name, until_timestamp)
-      SqlPartitioner::SQL.compress_lines(<<-SQL)
+      compress_lines(<<-SQL)
         ALTER TABLE #{table_name}
         ADD PARTITION
         (PARTITION #{partition_name}
@@ -35,7 +61,7 @@ module SqlPartitioner
         "PARTITION #{partition_name} VALUES LESS THAN (#{until_timestamp})"
       end.join(',')
 
-      SqlPartitioner::SQL.compress_lines(<<-SQL)
+      compress_lines(<<-SQL)
         ALTER TABLE #{table_name}
         REORGANIZE PARTITION #{reorg_partition_name} INTO
         (#{partition_suq_query})
@@ -47,7 +73,7 @@ module SqlPartitioner
         "PARTITION #{partition_name} VALUES LESS THAN (#{until_timestamp})"
       end.join(',')
 
-      SqlPartitioner::SQL.compress_lines(<<-SQL)
+      compress_lines(<<-SQL)
         ALTER TABLE #{table_name}
         PARTITION BY RANGE(timestamp)
         (#{partition_sub_query})
