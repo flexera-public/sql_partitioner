@@ -7,6 +7,20 @@ module SqlPartitioner
 
     FUTURE_PARTITION_VALUE = 'MAXVALUE'
 
+    # @param [{Symbol=>Object}] options
+    # @options options [SqlPartitioner::BaseAdapter] :adapter for DB communication
+    # @options options [String] :table_name target table for the partition management operations
+    # @options options [Symbol] :time_unit to use for the table's `timestamp` column, defaults to :seconds
+    # @options options [Fixnum] :current_time unix epoch in seconds
+    # @options options [Logger] :logger
+    # @options options [Fixnum] :lock_wait_timeout (in seconds) Each SQL statement will be executed with `@@local.lock_wait_timeout`
+    #  having been temporarily set to this value.
+    #  Background: Any partitioning statement must acquire a table lock on the partitioned table,
+    #  and while it is waiting to acquire this lock, any subsequent queries on that table will be blocked and have to wait.
+    #  It may take a long time to acquire a table lock if there were already long-running queries in progress.
+    #  Therefore, setting a short timeout (e.g. 1 second) ensures the partitioning statement will timeout quickly,
+    #  so any other SQL operations on that table will not be delayed.
+    #  If the partitioning command times-out, it will have to be retried later.
     def initialize(options = {})
       @adapter            = options[:adapter]
       @tuc                = TimeUnitConverter.new(options[:time_unit] || :seconds)
