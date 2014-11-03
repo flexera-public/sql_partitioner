@@ -15,7 +15,7 @@ partition_manager = SqlPartitioner::PartitionsManager.new(
     :lock_wait_timeout => 1,
     :adapter           => SqlPartitioner::DMAdapter.new(DataMapper.repository.adapter),
     :table_name        => 'my_partitioned_table',
-    :logger            => Merb.logger,
+    :logger            => Logger.new(STDOUT),
     :time_unit         => :micro_seconds
 )
 ```
