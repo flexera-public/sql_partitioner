@@ -1,3 +1,9 @@
+## 0.6.1 (2014-11-04)
+
+Features:
+
+  - Small README and .gemspec improvements
+
 ## 0.6.0 (2014-11-03)
 
 Features:

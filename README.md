@@ -1,7 +1,8 @@
 # SqlPartitioner
-[![Build Status](https://travis-ci.org/rightscale/sql_partitioner.png)](https://travis-ci.org/rightscale/sql_partitioner)
+[![Build Status](https://travis-ci.org/rightscale/sql_partitioner.png?branch=master)](https://travis-ci.org/rightscale/sql_partitioner)
+[![Gem Version](https://badge.fury.io/rb/sql_partitioner.svg)](http://badge.fury.io/rb/sql_partitioner)
 
-SqlPartitioner provides a `PartitionManager` class to help maintain partitioned tables in MySQL.
+SqlPartitioner provides a `PartitionsManager` class to help maintain partitioned tables in MySQL.
 If you have a table that is partitioned based on a timestamp, you will likely need to regularly add new partitions 
 into the future as well as remove older partitions to free up space. This gem will help.
 
@@ -26,7 +27,7 @@ Does not yet support databases other than MySQL. Target table can only be partit
 ## Getting Started
 You'll need to `require 'sql_partitioner'`.
 
-Here's an example for initializing a `PartitionManager` instance, using `DataMapper`:
+Here's an example for initializing a `PartitionsManager` instance, using `DataMapper`:
 
 ```ruby
 partition_manager = SqlPartitioner::PartitionsManager.new(
