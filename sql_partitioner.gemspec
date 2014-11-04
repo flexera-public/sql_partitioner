@@ -7,11 +7,16 @@ Gem::Specification.new do |gem|
   gem.name             = "sql_partitioner"
   gem.version          = SqlPartitioner::VERSION
 
-  gem.authors          = ['Dominic Metzger, Sumner McCarty, Prakash Selvaraj, Jim Slattery']
-  gem.date             = "2014-10-02"
+  gem.authors          = ['Dominic Metzger', 'Sumner McCarty', 'Prakash Selvaraj', 'Jim Slattery']
+  gem.date             = "2014-11-04"
 
-  gem.summary          = %q{SQL Partitioning.}
-  gem.description      = %q{SQL Partitioning}
+  gem.summary          = %q{SqlPartitioner helps maintain partitioned tables in MySQL.}
+  gem.description      = <<-EOF
+    This gem will help setup partitioning on a table, based on its `timestamp` column.
+    Once you have a table that is partitioned based on a timestamp, you will likely need to
+    regularly add new partitions into the future, and drop older partitions to free up space.
+    This gem can help carry out such routine activities as well.
+  EOF
   gem.homepage         = "https://github.com/rightscale/sql_partitioner"
   gem.email            = 'support@rightscale.com'
   gem.licenses         = ["MIT"]
