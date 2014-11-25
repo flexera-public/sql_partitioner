@@ -1,3 +1,7 @@
+## 0.6.2 (2014-11-25)
+
+  - Travis CI now running tests with Ruby 2.1.5 (previously Ruby 2.1.2)
+
 ## 0.6.1 (2014-11-04)
 
 Features:
