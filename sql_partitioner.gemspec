@@ -8,7 +8,7 @@ Gem::Specification.new do |gem|
   gem.version          = SqlPartitioner::VERSION
 
   gem.authors          = ['Dominic Metzger', 'Sumner McCarty', 'Prakash Selvaraj', 'Jim Slattery']
-  gem.date             = "2014-11-04"
+  gem.date             = "2015-10-19"
 
   gem.summary          = %q{SqlPartitioner helps maintain partitioned tables in MySQL.}
   gem.description      = <<-EOF
