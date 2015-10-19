@@ -1,5 +1,5 @@
-require 'simplecov'
-SimpleCov.start
+require 'coveralls'
+Coveralls.wear!
 
 require 'active_record'
 require 'data_mapper'

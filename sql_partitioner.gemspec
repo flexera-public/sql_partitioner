@@ -38,6 +38,10 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency("mysql", "2.8.1")
   gem.add_development_dependency("activerecord", '3.0.0')
 
+  gem.add_development_dependency("coveralls")
+  gem.add_development_dependency("mime-types",   '1.25.1')
+  gem.add_development_dependency("rest-client",  '<=1.7.0')
+
   #-- DataMapper --------------------------------------------------------
   do_gems_version   = "0.10.7"
   dm_gems_version   = "1.2.0"
