@@ -8,7 +8,7 @@ Gem::Specification.new do |gem|
   gem.version          = SqlPartitioner::VERSION
 
   gem.authors          = ['Dominic Metzger', 'Sumner McCarty', 'Prakash Selvaraj', 'Jim Slattery']
-  gem.date             = "2014-11-04"
+  gem.date             = "2015-10-19"
 
   gem.summary          = %q{SqlPartitioner helps maintain partitioned tables in MySQL.}
   gem.description      = <<-EOF
@@ -37,6 +37,10 @@ Gem::Specification.new do |gem|
 
   gem.add_development_dependency("mysql", "2.8.1")
   gem.add_development_dependency("activerecord", '3.0.0')
+
+  gem.add_development_dependency("coveralls")
+  gem.add_development_dependency("mime-types",   '1.25.1')
+  gem.add_development_dependency("rest-client",  '<=1.7.0')
 
   #-- DataMapper --------------------------------------------------------
   do_gems_version   = "0.10.7"

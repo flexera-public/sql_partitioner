@@ -1,6 +1,8 @@
 # SqlPartitioner
 [![Build Status](https://travis-ci.org/rightscale/sql_partitioner.png?branch=master)](https://travis-ci.org/rightscale/sql_partitioner)
 [![Gem Version](https://badge.fury.io/rb/sql_partitioner.svg)](http://badge.fury.io/rb/sql_partitioner)
+[![Coverage Status](https://coveralls.io/repos/rightscale/sql_partitioner/badge.svg?branch=master&service=github)](https://coveralls.io/github/rightscale/sql_partitioner?branch=master)
+[![Dependency Status](https://gemnasium.com/rightscale/sql_partitioner.svg)](https://gemnasium.com/rightscale/sql_partitioner)
 
 SqlPartitioner provides a `PartitionsManager` class to help maintain partitioned tables in MySQL.
 If you have a table that is partitioned based on a timestamp, you will likely need to regularly add new partitions 
